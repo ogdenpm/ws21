@@ -18,10 +18,13 @@
     <ClCompile Include="getfl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="link.c">
+    <ClCompile Include="support.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="support.c">
+    <ClCompile Include="link1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="link2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -30,6 +33,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="support.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="link.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

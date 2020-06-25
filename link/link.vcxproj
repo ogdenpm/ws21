@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="getfl.c" />
-    <ClCompile Include="link.c" />
+    <ClCompile Include="link1.c" />
+    <ClCompile Include="link2.c" />
     <ClCompile Include="support.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="link.h" />
     <ClInclude Include="std.h" />
     <ClInclude Include="support.h" />
   </ItemGroup>
