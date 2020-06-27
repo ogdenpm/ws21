@@ -350,3 +350,4 @@ MigrationBackup/
 .ionide/
 /Build
 /Install
+/float

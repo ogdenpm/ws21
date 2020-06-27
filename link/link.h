@@ -135,7 +135,6 @@ void addlib(long arg_2);
 symbol_t *addsym(char *arg_2, int arg_4, long arg_6);
 void addusym(char *arg_2);
 long docode(int segId, int relId, int symCnt, symbol_t **arg_8, obhdr_t *segHdr, long loadBias, long segByesLeft, long arg_14);
-void dumpsyms();
 uint8_t getby(int arg_2);
 FILE *gtlfile(int *pac, char ***pav, char **name);
 uint16_t gtmagic(FILE *fp);

@@ -68,15 +68,6 @@ void addlib(long arg_2) {
     liboff[nlibs++] = arg_2;
 }
 
-void dumpsyms() {
-    symbol_t *p;
-    for (int i = 0; i < nsyms; i++) {
-        p = &stabs[i >> 6][i & 0x3f];
-        printf("%04X - %-16.15s: %02X %08X\n",i,  p->name, p->flag, p->val);
-    }
-
-}
-
 
 symbol_t *addsym(char *arg_2, int arg_4, long arg_6) {
     int r2, r4;

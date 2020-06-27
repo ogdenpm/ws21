@@ -1,41 +1,4 @@
 #include "link.h"
-#if 0
-int longint;
-int lsfmt;
-int ok;
-int lenname = 15;
-long maxbnd;
-uint16_t binhdr;
-int nlibs;
-long liboff[128];
-
-obhdr_t obhdr;
-
-long bsiz, dsiz, tsiz;
-uint16_t nsyms;
-uint16_t nund;
-
-symbol_t *stabs[32];        // 32 pointers
-int afl, cfl, dfl, hfl, rfl, tfl, dround;
-int xfl = 2;
-list_t llist = { 10 };
-
-long drmask;
-char *endbss, *endtext, *enddata;
-char *ofile = "xeq";
-list_t ulist = { 10 };
-long bpad = 0;
-long tbias = 0;
-long dbias = -1;
-char *_pname = "link";
-FILE *ifd;
-FILE *ofd;
-FILE *tfd;
-
-iobuf_t ibuf[2];
-iobuf_t obuf[4];
-long iseek;
-#endif
 
 int nxtexit;
 
