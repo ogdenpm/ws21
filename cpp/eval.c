@@ -287,9 +287,10 @@ token_t *exterm(token_t *arg_2, long *r4) {
         } else
             var_8 = 8;
 
-        if (btol(r3,r2,r4,var_8) != r2) {
+        if (btol(r3, r2, r4, var_8) != r2) {
             wperror("illegal number in #if");
             *r4 = 0;
+        }
         return arg_2->next;
     } else if (arg_2->type == SQSTRING) { 
         r3 = &var_208[1];
@@ -309,7 +310,7 @@ token_t *exterm(token_t *arg_2, long *r4) {
         return 0;
     } else if ((arg_2=exterm(arg_2,r4)) == 0)
         return 0;
-    } else {
+    else {
         if (var_20A == 0xD8) // -
             *r4 = -*r4;
         else if (var_20A == 0x5A) // !

@@ -43,8 +43,8 @@ int mkexec() {
     return 1;
 }
 
-unsigned scanstr(const char *s, int c) {
-    const char *t;
+unsigned scanstr(const uint8_t *s, uint8_t c) {
+    const uint8_t *t;
     for (t = s; *t && *t != c; t++)
         ;
     return (unsigned)(t - s);
@@ -281,7 +281,9 @@ unsigned getl(fio_t *pfio, char *s, unsigned n) {
         if ((s[cnt++] = c) == '\n')
             break;
     }
+#ifdef _DEBUG
     printf("%.*s", cnt, s);
+#endif
     return cnt;
 }
  

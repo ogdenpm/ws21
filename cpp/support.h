@@ -24,7 +24,7 @@ FILE *getfiles(int *pac, char ***pav, FILE *dfd, FILE *efd);
 //int prefix(char *s1, char *s2);
 //int mkexec();
 char *buybuf(char *s, unsigned n);
-unsigned scanstr(const char *s, int c);
+unsigned scanstr(const uint8_t *s, uint8_t c);
 int cmpbuf(char *s1, char *s2, unsigned n);
 unsigned cpybuf(char *s1, char *s2, unsigned n);
 unsigned btos(char *s, unsigned n, short *pinum, short base);
