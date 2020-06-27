@@ -3,33 +3,33 @@
 #include <limits.h>     // for floating point
 
 code_t cKeyword[] = {
-    { "\x2" "do", 0x27},
-    { "\x2" "if", 0x2E},
-    { "\x3" "for", 0x2C},
-    { "\x3" "int", 0x2F},
-    { "\x4" "auto", 0x21},
-    { "\x4" "case", 0x23},
-    { "\x4" "char", 0x24},
-    { "\x4" "else", 0x29},
-    { "\x4" "goto", 0x2D},
-    { "\x4" "long", 0x30},
-    { "\x5" "break", 0x22},
-    { "\x5" "float", 0x2B},
-    { "\x5" "short", 0x33},
-    { "\x5" "union", 0x38},
-    { "\x5" "while", 0x3A},
-    { "\x6" "double", 0x28},
-    { "\x6" "extern", 0x2A},
-    { "\x6" "return", 0x32},
-    { "\x6" "sizeof", 0x61},
-    { "\x6" "static", 0x34},
-    { "\x6" "struct", 0x35},
-    { "\x6" "switch", 0x36},
-    { "\x7" "default", 0x26},
-    { "\x7" "typedef", 0x37},
-    { "\x8" "continue", 0x25},
-    { "\x8" "register", 0x31},
-    { "\x8" "unsigned", 0x39}
+    { "\x2" "do", C_DO},
+    { "\x2" "if", C_IF},
+    { "\x3" "for", C_FOR},
+    { "\x3" "int", C_INT},
+    { "\x4" "auto", C_AUTO},
+    { "\x4" "case", C_CASE},
+    { "\x4" "char", C_CHAR},
+    { "\x4" "else", C_ELSE},
+    { "\x4" "goto", C_GOTO},
+    { "\x4" "long", C_LONG},
+    { "\x5" "break", C_BREAK},
+    { "\x5" "float", C_FLOAT},
+    { "\x5" "short", C_SHORT},
+    { "\x5" "union", C_UNION},
+    { "\x5" "while", C_WHILE},
+    { "\x6" "double", C_DOUBLE},
+    { "\x6" "extern", C_EXTERN},
+    { "\x6" "return", C_RETURN},
+    { "\x6" "sizeof", C_SIZEOF},
+    { "\x6" "static", C_STATIC},
+    { "\x6" "struct", C_STRUCT},
+    { "\x6" "switch", C_SWITCH},
+    { "\x7" "default", C_DEFAULT},
+    { "\x7" "typedef", C_TYPEDEF},
+    { "\x8" "continue", C_CONTINUE},
+    { "\x8" "register", C_REGISTER},
+    { "\x8" "unsigned", C_UNSIGNED}
 };
 
 int word_89F9;
@@ -72,30 +72,30 @@ int flaccum(char *r4, uint64_t *arg_4, int r2, int *skipped) {
 #endif
 
 token_t *lexchar(token_t *r4) {
-    char var_20B;
-    char var_20A[512];
-    long var_A;
+    char code;
+    char str[512];
+    long val;
 
-    int r3 = doesc(var_20A, r4->tok, r4->toklen) - 2;
+    int r3 = doesc(str, r4->tok, r4->toklen) - 2;
     int r2 = r3 < 4 ? 1 : r3 - 3;
-    for (var_A = 0L; r2 <= r3; r2++)
-        var_A = (var_A << 8) | (var_20A[r2] & 0xff);
+    for (val = 0L; r2 <= r3; r2++)
+        val = (val << 8) | (str[r2] & 0xff);
     switch (r3) {
     case 0:
-        var_20B = 0x18;                             // uint8_t - no char
+        code = C_INT8;                               // int8_t - no char
         break;
     case 1:
-        var_20B = var_20A[1] >= 0 ? 0x18 : 0x16;      // checks sign of first char uint8_t or uint16_t
+        code = str[1] >= 0 ? C_INT8 : C_INT16;      // checks sign of first char int8_t or int16_t
         break;
     case 2:
-        var_20B = var_20A[1] >= 0 ? 0x16 : 0x1A;      // uint16_t or int16_t
+        code = str[1] >= 0 ? C_INT16 : C_UINT16;      // int16_t or uint16_t
         break;
     default:
-        var_20B = var_A < 0 ? 0x19 : 0x15;            // int32_t or uint32_t
+        code = val < 0 ? C_UINT32 : C_INT32;            // uint32_t or int32_t
         break;
     }
 
-    putcode("c4", var_20B, &var_A);
+    putcode("c4", code, &val);
     return r4->next;
 }
 
@@ -175,7 +175,7 @@ token_t *lexfloa(token_t *arg_2) {
     putcode("c8", 0x11, &var_14);
 #else
     wsDouble wsDbl = mkWsDouble(var_14, var_A);
-    putcode("c8", 0x11, &wsDbl);
+    putcode("c8", C_DBL, &wsDbl);
 #endif
     if (arg_2->tok != r2) {
         if (arg_2->tok + arg_2->toklen == r2)
@@ -199,18 +199,18 @@ char *lexfnxt(token_t **arg_2, char *arg_4) {
 }
 
 token_t *lexiden(token_t *r4) {
-    int r3;
+    int code;
     int r2 = min(r4->toklen, 8);
-    if (r3 = scntab(cKeyword, 0x1B, r4->tok, r2))
-        putcode("c", r3);
+    if (code = scntab(cKeyword, 0x1B, r4->tok, r2))
+        putcode("c", code);
     else
-        putcode("ccb", 0x12, r2, r4->tok, r2);
+        putcode("ccb", C_ID, r2, r4->tok, r2);
     return r4->next;
 }
 
 token_t *lexint(token_t *r4, int base, int skip) {
     uint16_t r3;
-    int8_t var_10;
+    int8_t code;
     int8_t loByte;
     long lnum;
     int16_t hiWord;
@@ -225,13 +225,13 @@ token_t *lexint(token_t *r4, int base, int skip) {
     loWord = (int16_t)lnum;
     loByte = (int8_t)loWord;
     if (tolower(r4->tok[r4->toklen - 1]) == 'l' || (r2 && loWord != lnum) || (!r2 && hiWord != 0))
-        var_10 = r2 || lnum >= 0 ? 0x15 : 0x19;
+        code = r2 || lnum >= 0 ? C_INT32 : C_UINT32;
     else if ((r2 && loByte != loWord) || (!r2 && (loWord & 0xff00)))
-        var_10 = !r2 || loWord >= 0 ? 0x16 : 0x1A;
+        code = !r2 || loWord >= 0 ? C_INT16 : C_UINT16;
     else
-        var_10 = !r2 || loByte >= 0 ? 0x18 : 0x16;
+        code = !r2 || loByte >= 0 ? C_INT8 : C_INT16;
 
-    putcode("c4", var_10, &lnum);
+    putcode("c4", code, &lnum);
     return r4->next;
 }
 
@@ -258,7 +258,7 @@ token_t *lexstri(token_t *r4) {
     uint16_t var_8;
 
     var_8 = doesc(var_208, r4->tok, r4->toklen) - 2;
-    putcode("c2b", 0x17, &var_8, var_208 + 1, var_8);
+    putcode("c2b", C_STRING, &var_8, var_208 + 1, var_8);
     return r4->next;
 }
 
@@ -339,11 +339,11 @@ void putls(token_t *r4) {
     if (xflag) {
         if (r4->type != NL) {
             if (pincl)
-                putcode("c2", 0x14, &pincl->lineno);
+                putcode("c2", C_LINENO, &pincl->lineno);
             if (pflag) {
                 pflag = 0;
                 if (pincl)
-                    putcode("ccp", 0x13, pincl->fname ? lenstr(pincl->fname) : 0, pincl->fname ? pincl->fname : "");
+                    putcode("ccp", C_FILE, pincl->fname ? lenstr(pincl->fname) : 0, pincl->fname ? pincl->fname : "");
             }
         }
         while (r4->type != NL)

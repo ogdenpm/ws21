@@ -8,6 +8,7 @@
 
 #include "std.h"
 #include "support.h"
+#include "lex.h"
 
 typedef struct {        // valid as many_t arg
     int ntop;
@@ -55,12 +56,6 @@ typedef struct _param {
     token_t *first;
     token_t *last;
 } param_t;
-
-enum {SQSTRING=1, NL, ID, NUMBER, PUNCT, DQSTRING};
-enum { P_DEFINE = 0xa, P_ELSE = 0xb, P_ENDIF = 0xc,
-       P_IF = 0xd, P_IFDEF = 0xe, P_IFNDEF = 0xf,
-       P_INCLUDE = 0x10, P_LINE = 0x11, P_HASH = 0x12,
-       P_UNDEF = 0x13};
 
 
 extern int cFlag;

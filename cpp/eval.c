@@ -2,64 +2,66 @@
 
 char escChar[] = "btnvfrBTNVFR(!)^";
 char escMap[] = {'\b','\t','\n','\v','\f','\r','\b','\t','\n','\v','r', '\r', '{', '|', '}', '~'};
-uint8_t byte_888E[] = {0xE2, 0x85, 0x99, 0xDE, 0xD8, 0x97, 0xA0, 0x95, 0x96, 0x8F, 0x90, 0x94, 0x9B,0xC1,0xA3, 0x9C, 0x82, 0x9D, 0x9F,   0};
-uint8_t byte_88A2[] = {0x0E, 0x0E, 0x0E, 0x0D, 0x0D, 0x0C, 0x0C, 0x0B, 0x0B, 0x0B, 0x0B, 0x0A, 0x0A,   9,   8,    7,    6,    5,    4};
+uint8_t opMap[] =  {C_STAR, C_DIV, C_MOD, C_PLUS, C_MINUS, C_LSHIFT, C_RSHIFT, C_LT, C_LE, C_GT, C_GE,
+                       C_EQEQ, C_NE, C_AND, C_XOR, C_OR, C_ANDAND, C_OROR, C_QMARK,   0};
+uint8_t opPrec[] = {0x0E,   0x0E,  0x0E,  0x0D,   0x0D,    0x0C,     0x0C,     0x0B, 0x0B, 0x0B, 0x0B,
+                       0x0A,   0x0A, 9,     8,     7,    6,        5,      4};
 
 code_t punctTab[] = {
-    { "\x1" "!", 0x5A},
-    { "\x1" "%", 0x99},
-    { "\x1" "&", 0xC1},
-    { "\x1" "(", 0x6},
-    { "\x1" ")", 0xA},
-    { "\x1" "*", 0xE2},
-    { "\x1" "+", 0xDE},
-    { "\x1" ",", 0x2},
-    { "\x1" "-", 0xD8},
-    { "\x1" ".", 0x3},
-    { "\x1" "/", 0x85},
-    { "\x1" ":", 0x1},
-    { "\x1" ";", 0x0B},
-    { "\x1" "<", 0x95},
-    { "\x1" "=", 0x88},
-    { "\x1" ">", 0x8F},
-    { "\x1" "?", 0x9F},
-    { "\x1" "[", 0x4},
-    { "\x1" "]", 0x8},
-    { "\x1" "^", 0xA3},
-    { "\x1" "{", 0x5},
-    { "\x1" "|", 0x9C},
-    { "\x1" "}", 0x9},
-    { "\x1" "~", 0x43},
-    { "\x2" "!=", 0x9B},
-    { "\x2" "&&", 0x82},
-    { "\x2" "(<", 0x5},
-    { "\x2" "(|", 0x4},
-    { "\x2" "++", 0x53},
-    { "\x2" "--", 0x44},
-    { "\x2" "->", 0x7},
-    { "\x2" "<<", 0x97},
-    { "\x2" "<=", 0x96},
-    { "\x2" "=%", 0x8C},
-    { "\x2" "=&", 0x86},
-    { "\x2" "=*", 0x91},
-    { "\x2" "=+", 0x8E},
-    { "\x2" "=-", 0x8B},
-    { "\x2" "=/", 0x87},
-    { "\x2" "==", 0x94},
-    { "\x2" "=^", 0x92},
-    { "\x2" "=|", 0x8D},
-    { "\x2" ">)", 0x9},
-    { "\x2" ">=", 0x90},
-    { "\x2" ">>", 0xA0},
-    { "\x2" "\\!", 0x9C},
-    { "\x2" "\\(", 0x5},
-    { "\x2" "\\)", 0x9},
-    { "\x2" "\\^", 0x43},
-    { "\x2" "|)", 0x8},
-    { "\x2" "||", 0x9D},
-    { "\x3" "=<<", 0x89},
-    { "\x3" "=>>", 0x8A},
-    { "\x3" "\\!!", 0x9D}
+    { "\x1" "!", C_LNOT},
+    { "\x1" "%", C_MOD},
+    { "\x1" "&", C_AND},
+    { "\x1" "(", C_LPAREN},
+    { "\x1" ")", C_RPAREN},
+    { "\x1" "*", C_STAR},
+    { "\x1" "+", C_PLUS},
+    { "\x1" ",", C_COMMA},
+    { "\x1" "-", C_MINUS},
+    { "\x1" ".", C_DOT},
+    { "\x1" "/", C_DIV},
+    { "\x1" ":", C_COLON},
+    { "\x1" ";", C_SEMI},
+    { "\x1" "<", C_LT},
+    { "\x1" "=", C_EQUAL},
+    { "\x1" ">", C_GT},
+    { "\x1" "?", C_QMARK},
+    { "\x1" "[", C_LBRACKET},
+    { "\x1" "]", C_RBRACKET},
+    { "\x1" "^", C_XOR},
+    { "\x1" "{", C_LBRACE},
+    { "\x1" "|", C_OR},
+    { "\x1" "}", C_RBRACE},
+    { "\x1" "~", C_NOT},
+    { "\x2" "!=", C_NE},
+    { "\x2" "&&", C_ANDAND},
+    { "\x2" "(<", C_LBRACE},
+    { "\x2" "(|", C_LBRACKET},
+    { "\x2" "++", C_INC},
+    { "\x2" "--", C_DEC},
+    { "\x2" "->", C_ARROW},
+    { "\x2" "<<", C_LSHIFT},
+    { "\x2" "<=", C_LE},
+    { "\x2" "=%", C_EQMOD},
+    { "\x2" "=&", C_EQAND},
+    { "\x2" "=*", C_EQMUL},
+    { "\x2" "=+", C_EQPLUS},
+    { "\x2" "=-", C_EQMINUS},
+    { "\x2" "=/", C_EQDIV},
+    { "\x2" "==", C_EQEQ},
+    { "\x2" "=^", C_EQXOR},
+    { "\x2" "=|", C_EQOR},
+    { "\x2" ">)", C_RBRACE},
+    { "\x2" ">=", C_GE},
+    { "\x2" ">>", C_RSHIFT},
+    { "\x2" "\\!", C_OR},
+    { "\x2" "\\(", C_LBRACE},
+    { "\x2" "\\)", C_RBRACE},
+    { "\x2" "\\^", C_NOT},
+    { "\x2" "|)", C_RBRACKET},
+    { "\x2" "||", C_OROR},
+    { "\x3" "=<<", C_EQLSHIFT},
+    { "\x3" "=>>", C_EQRSHIFT},
+    { "\x3" "\\!!", C_OROR}
 };
 
 int doesc(char *arg_2, char *r4, int arg_6) {
@@ -160,10 +162,10 @@ token_t *expr(token_t *arg_2, long *arg_4) {
 
 int expri(int r4) {
     int r2;
-    if (r4 == 0 || byte_888E[(r2 = scanstr(byte_888E, r4))] == 0)
+    if (r4 == 0 || opMap[(r2 = scanstr(opMap, r4))] == 0)
         return 0;
     else
-        return byte_88A2[r2];
+        return opPrec[r2];
 }
 
 
@@ -190,16 +192,16 @@ token_t *extail(int arg_2, long *arg_4, int *arg_6, token_t *arg_8) {
         var_A = *arg_4;
         var_E = var_A - var_12;
         switch(r2) {
-        case 0xde: // +
+        case C_PLUS:
             var_A+=var_12;
             break;
-        case 0xd8:  // -
+        case C_MINUS:
             var_A = var_E;
             break;
-        case 0xe2:  // *
+        case C_STAR:
             var_A *= var_12;
             break;
-        case 0x85: // /     -- if var_12 == 0 then mimic ws 8080 long behaviour i.e. 1 for -ve, else -1
+        case C_DIV: // if var_12 == 0 then mimic ws 8080 long behaviour i.e. 1 for -ve, else -1
             if (var_12)
                 var_A /= var_12;
             else {
@@ -207,50 +209,50 @@ token_t *extail(int arg_2, long *arg_4, int *arg_6, token_t *arg_8) {
                 wperror("divide by zero in #if");
             }
             break;
-         case 0x99: // %    -- if var_12 == 0 then mimic ws 8080 long behaviour i.e. var_A unchanged
+         case C_MOD: // if var_12 == 0 then mimic ws 8080 long behaviour i.e. var_A unchanged
              if (var_12)
                  var_A %= var_12;
              else
                  wperror("mod by zero in #if");
             break;
-        case 0xc1:  // &
+        case C_AND:
             var_A &= var_12;
             break;
-        case 0x9c:  // |
+        case C_OR:
             var_A |= var_12;
             break;
-        case 0xa3:  // ^
+        case C_XOR:
             var_A ^= var_12;
             break;
-        case 0x97: // <<
+        case C_LSHIFT:
             var_A <<= var_12;
             break;
-        case 0xa0:  // >>
+        case C_RSHIFT:
             var_A >>= var_12;
             break;
-        case 0x95:  // <
+        case C_LT:
             var_A = var_E < 0;
             break;
-        case 0x94:  // ==
+        case C_EQEQ:
             var_A = var_E == 0;
             break;
-        case 0x8f:  // >
+        case C_GT:
             var_A = var_E > 0;
             break;
-        case 0x96:  // <=
+        case C_LE:
             var_A = var_E <= 0;
             break;
-        case 0x9b:  // !=
+        case C_NE:
             var_A = var_E != 0;
             break;
-        case 0x90:  // >=
+        case C_GE:
             var_A = var_E >= 0;
-        case 0x82:  // &&
+        case C_ANDAND:
             var_A = var_A && var_12;
             break;
-        case 0x9d:  // ||
+        case C_OROR:
             var_A = var_A || var_12;
-        case 0x9f:  // ?
+        case C_QMARK:
             if (!punct(arg_8,':') || (arg_8 = expr(arg_8->next, &var_E)) == 0) {
                 wperror("illegal ? : in #if");
                 return 0;

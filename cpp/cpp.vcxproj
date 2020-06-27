@@ -148,6 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpp.h" />
+    <ClInclude Include="lex.h" />
     <ClInclude Include="std.h" />
     <ClInclude Include="support.h" />
   </ItemGroup>

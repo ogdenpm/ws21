@@ -17,24 +17,24 @@ pincl_t *pincl;
 int nerrors;
 int pflag;
 code_t cppKeyword[] = {
-    {"\x2" "IF", 0x0D},
-    {"\x2" "if", 0x0D},
-    {"\x4" "ELSE", 0x0B},
-    {"\x4" "LINE", 0x11},
-    {"\x4" "else", 0x0B},
-    {"\x4" "line", 0x11},
-    {"\x5" "ENDIF", 0x0C},
-    {"\x5" "IFDEF", 0x0E},
-    {"\x5" "UNDEF", 0x13},
-    {"\x5" "endif", 0x0C},
-    {"\x5" "ifdef", 0x0E},
-    {"\x5" "undef", 0x13},
-    {"\x6" "DEFINE", 0x0A},
-    {"\x6" "IFNDEF", 0x0F},
-    {"\x6" "define", 0x0A},
-    {"\x6" "ifndef", 0x0F},
-    {"\x7" "INCLUDE", 0x10},
-    {"\x7" "include", 0x10}
+    {"\x2" "IF", P_IF},
+    {"\x2" "if", P_IF},
+    {"\x4" "ELSE", P_ELSE},
+    {"\x4" "LINE", P_LINE},
+    {"\x4" "else", P_ELSE},
+    {"\x4" "line", P_LINE},
+    {"\x5" "ENDIF", P_ENDIF},
+    {"\x5" "IFDEF", P_IFDEF},
+    {"\x5" "UNDEF", P_UNDEF},
+    {"\x5" "endif", P_ENDIF},
+    {"\x5" "ifdef", P_IFDEF},
+    {"\x5" "undef", P_UNDEF},
+    {"\x6" "DEFINE", P_DEFINE},
+    {"\x6" "IFNDEF", P_IFNDEF},
+    {"\x6" "define", P_DEFINE},
+    {"\x6" "ifndef", P_IFNDEF},
+    {"\x7" "INCLUDE", P_INCLUDE},
+    {"\x7" "include", P_INCLUDE}
 };
 uint8_t lineBuf[512];
 
@@ -213,7 +213,7 @@ void putns(token_t *r4) {
     char *r2;
 
     switch (r4->type) {
-    case 0xa:       // #define
+    case P_DEFINE:
         if (r4->next->type != ID)
             wperror("bad #define");
         else {
@@ -223,7 +223,7 @@ void putns(token_t *r4) {
                 buybuf(r4->next->next->spc, &r3->tok[r3->toklen] - r4->next->next->spc));
         }
         break;
-    case 0x13:      // #undef
+    case P_UNDEF:
         if (r4->next->type != ID)
             wperror("bad #undef");
         else
@@ -245,7 +245,7 @@ void putns(token_t *r4) {
             pflag = 1;
         }
         break;
-    case 0x11:      // #line
+    case P_LINE:      // #line
         if (r4->next->type != NUMBER)
             wperror("bad #line");
         else {
@@ -259,7 +259,7 @@ void putns(token_t *r4) {
             }
         }
         break;
-    case 0x12:      // #
+    case P_HASH:      // #
         if (r4->next->type != NL)
             wperror("bad #xxx");
         break;
