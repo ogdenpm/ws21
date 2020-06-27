@@ -29,6 +29,18 @@ Other than the fixes most of the code is as close to the original decompilation 
 
 Whilst I have done some testing of the code, e.g. library add/delete, checking link by building the whitesmiths' executables and assembling echo.s, there are likely to be some hidden bugs. If you identify one, please let me  know and I will look to fix it.
 
+**cpp** - the c pre-processor pass of the Whitesmiths' V2.1 C compiler
+
+Most of the changes are similar to the other ports, although I have had to implement a number of additional support functions as follows
+
+1. The original code relies on the Whitesmiths' I/O processing in that it writes #define entries based on the command line into the initial I/O buffer, rather than creating the defines explicitly. This required a customised version of getl to support this. The routine also assumes EOF when a NULL is read
+2. alloc, free (wsfree) and frelst. The Whitesmith's routines are used extensively. I wrote simple wrapper functions to synthesise these.
+3. The biggest change was to support Whitesmiths' double format. Unfortunately it is different from the IEEE standards used and although it has less range, it has higher precision. I implemented a simplistic solution that converts ascii strings to a suitable double and in doing so I identified some issues with the Whitesmiths' format, especially around rounding. In general I believe my solution has better precision and is more tolerant to overflow/underflow, however it does mean that the least significant bits may be different. So far I have observed a difference of up to 2 in least significant byte of the matissa. Given the poor performance of and some errors in the original 8080 code, I do not intend to modify my code, other than for genuine errors anyone identifies.
+4. Three routines used variable number of arguments. They have been modified to use stdarg.
+5. btos & btol implemented
+
+
+
 Mark Ogden
 
-20-Jun-2020
+27-Jun-2020
