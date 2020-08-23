@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cpp", "cpp\cpp.vcxproj", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "float", "float\float.vcxproj", "{309522CF-902C-4E3B-8295-42B4A73C1FD0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cp1", "cp1\cp1.vcxproj", "{3D545CA7-0B06-4F75-8DA3-5483298F3578}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -77,9 +79,16 @@ Global
 		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Debug|x86.ActiveCfg = Debug|Win32
 		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Debug|x86.Build.0 = Debug|Win32
 		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Release|x64.ActiveCfg = Release|x64
-		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Release|x64.Build.0 = Release|x64
 		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Release|x86.ActiveCfg = Release|Win32
 		{309522CF-902C-4E3B-8295-42B4A73C1FD0}.Release|x86.Build.0 = Release|Win32
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Debug|x64.ActiveCfg = Debug|x64
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Debug|x64.Build.0 = Debug|x64
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Debug|x86.ActiveCfg = Debug|Win32
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Debug|x86.Build.0 = Debug|Win32
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Release|x64.ActiveCfg = Release|x64
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Release|x64.Build.0 = Release|x64
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Release|x86.ActiveCfg = Release|Win32
+		{3D545CA7-0B06-4F75-8DA3-5483298F3578}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
