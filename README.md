@@ -39,8 +39,12 @@ Most of the changes are similar to the other ports, although I have had to imple
 4. Three routines used variable number of arguments. They have been modified to use stdarg.
 5. btos & btol implemented
 
+**cp1** - the parser pass of Whitesmiths' V2.1 C compiler
 
+Similar changes as per **cpp** above. Many changes due to the shared storage of int and pointers. Additionally many casts as there are common functions that manipulate various structures. Work ideally needs to be done to clean this up now that the code does at least compile some C source.
+
+Note, this cleanly compiles echo.c from the standard Whitesmith's distribution and a few other small files I have tried. More extensive testing is required to verify that it is a usable port.
 
 Mark Ogden
 
-27-Jun-2020
+23-Aug-2020
