@@ -106,8 +106,7 @@ token_t *lexchar(token_t *r4) {
     56 bits of the native code. It also skips adding digits when the matissa is greater
     than ULLONG_MAX / 10 + 9, as the final number is scaled back to 56 bit precision,
     the mkWsDouble routine in support.c, converts the matissa and a power of 10 exponent
-    into a whitesmiths' double, with the exception that pair wise bytes are not swapped.
-    The putcode function does the actual swapping when the value is emitted.
+    into a whitesmiths' double.
 */
 
 
@@ -291,13 +290,6 @@ void putWLong(uint32_t val) {       // pdp 11 order, high word, low word both in
     putWInt(val);
 }
 
-void putWDouble(wsDouble val) {     // swapped pairs of bytes
-    putWInt((uint16_t)(val / 0x1000000000000));
-    putWInt((uint16_t)(val / 0x100000000));
-    putWInt((uint16_t)(val / 0x10000));
-    putWInt((uint16_t)val);
-}
-
 void putcode(char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -313,7 +305,7 @@ void putcode(char *fmt, ...) {
             break;
         case 'b':
             r3 = va_arg(args, char *);
-            fprintf(ofd, "%.*s", va_arg(args, int), r3);
+            fwrite(r3, 1, va_arg(args, int), ofd);
             break;
         case '2':
             putWInt(*va_arg(args, uint16_t *));
@@ -322,7 +314,7 @@ void putcode(char *fmt, ...) {
             putWLong(*(va_arg(args, uint32_t *)));
             break;
         case '8':
-            putWDouble(*va_arg(args, wsDouble *));
+            fwrite(va_arg(args, uint8_t *), 1, 8 , ofd);        // write the double as an 8 byte sequences. wsDouble is in the righ format
             break;
         default:
             fprintf(stderr, "invalid putcode %c type\n", *fmt);

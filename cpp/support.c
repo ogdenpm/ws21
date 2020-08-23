@@ -196,7 +196,7 @@ double dtento(double dnum, short exp) {
 
     Note this function is not an exact match the whitesmith's 8080 code and may deviate in the least signficant bits in some cases
     most likely due to different internal rounding strategies for intermediate values. The biggest difference I have seen is +/- 2
-    to the matissa;
+    to the least significant byte of the matissa;
     Some examples of differences
     1) 1.0E-1  this version rounds the least siginficant bit the Whitesmith's code doesn't
     2) 1.0E32  this version correctly rounds the least significant bit, the Whitesmiths' code has an incorrect rounding as verified
@@ -219,18 +219,27 @@ wsDouble mkWsDouble(uint64_t matissa, short exp) {
 
     short wExp = 184;
     // normalise to 64 bits
-    while (matissa < 0x100000000000000ui64) {       // shift in byte chunks whilst msb is 0
+    if (matissa < (1ui64 << 32)) {
+        wExp -= 32;
+        matissa <<= 32;
+    }
+    if (matissa < (1ui64 << 48)) {
+        wExp -= 16;
+        matissa <<= 16;
+    }
+    if (matissa < (1ui64 << 56)) {
         wExp -= 8;
         matissa <<= 8;
     }
-    while (matissa < 0x8000000000000000ui64) {      // finish normailsation to 64bits
+
+    while (matissa < (1ui64 << 63)) {      // finish normailsation to 64bits
         wExp--;
         matissa <<= 1;
     }
 
     if (exp < 0) {
         while (exp < 0) {
-            while (matissa < 0x8000000000000000ui64) {
+            while (matissa < (1ui64 << 63)) {
                 wExp--;
                 matissa <<= 1;
             }
@@ -269,7 +278,17 @@ wsDouble mkWsDouble(uint64_t matissa, short exp) {
         return 0;
     if (wExp > 255)
         return 0x7fffffffffffffffui64;
-    return (matissa & 0x7fffffffffffffui64) | ((uint64_t)wExp << 55);
+    matissa = (matissa & 0x7fffffffffffffui64) | ((uint64_t)wExp << 55);    // merge in the exponent and, removing matissa high bit
+    // in Whitesmith's code, the double is stored byte swapped !!!
+    union {
+        uint8_t bytes[8];
+        wsDouble dbl;
+    } v;
+    for (int i = 0; i < 8; i += 2, matissa >>= 16) {
+        v.bytes[i] = (uint8_t)(matissa >> 8);
+        v.bytes[i + 1] = (uint8_t)matissa;
+    }
+    return v.dbl;
 }
 
 #endif
@@ -282,7 +301,7 @@ unsigned getl(fio_t *pfio, char *s, unsigned n) {
             break;
     }
 #ifdef _DEBUG
-    printf("%.*s", cnt, s);
+//    printf("%.*s", cnt, s);
 #endif
     return cnt;
 }

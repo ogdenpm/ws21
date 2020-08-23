@@ -69,7 +69,7 @@ extern char *iprefix;
 extern char *_pname;
 extern char **argv;
 extern int argc;
-extern int errfd;
+extern FILE *errfd;
 extern pincl_t *pincl;
 extern int nerrors;
 extern int pflag;

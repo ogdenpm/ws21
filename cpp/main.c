@@ -1,4 +1,5 @@
 #include "cpp.h"
+#include <fcntl.h>
 
 int cFlag;
 list_t dList = { 10 };
@@ -11,7 +12,7 @@ char *iprefix = "|";
 char *_pname = "pp";
 char **argv;
 int argc;
-int errfd = STDERR;
+FILE *errfd;
 FILE *ofd;              // added
 pincl_t *pincl;
 int nerrors;
@@ -156,9 +157,14 @@ int main(int _argc, char **_argv) {
         if ((ofd = fopen(oFile, xflag != 0 ? "wb" : "wt")) == NULL)
             wperror("bad output file");
         else
-            errfd = STDOUT;
-    } else
+            errfd = stdout;
+    } else {
         ofd = stdout;
+#ifdef _WIN32
+        _setmode(_fileno(stdout), _O_BINARY);
+#endif
+        errfd = stderr;
+    }
 
     while (r4 = putgr(getex(), 0)) {
         wperror("misplaced #%b", r4->tok, r4->toklen);

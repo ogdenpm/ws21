@@ -34,7 +34,7 @@ enum { // punctuation
 
 enum { // numbers
     C_DBL = 0x11, C_ID = 0x12, C_FILE = 0x13, C_LINENO = 0x14, C_INT32 = 0x15, C_INT16 = 0x16, C_STRING = 0x17,
-    C_INT8 = 0x18, C_UINT32 = 0x19, C_UINT16 = 0x1a
+    C_INT8 = 0x18, C_UINT32 = 0x19, C_UINT16 = 0x1a, C_UINT8 = 0x1b // C_UINT8 not used!!
 };
 
 /*

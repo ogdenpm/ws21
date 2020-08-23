@@ -141,18 +141,16 @@ void errfmt(char *r2, char *arg_4) {
 #else
 void errfmt_va(char *msg, va_list args) {
 
-    FILE *stream = errfd == 1 ? stdout : stderr;
-
     for (; *msg; msg++) {
         if (*msg != '%')
-            putc(*msg, stream);
+            putc(*msg, errfd);
         else if (*++msg == 'c')
-            putc(va_arg(args, int), stream);
+            putc(va_arg(args, int), errfd);
         else if (*msg == 's')
-            fprintf(stream, "%u", va_arg(args, int));
+            fprintf(errfd, "%u", va_arg(args, int));
         else {
             char *r3 = va_arg(args, char *);
-            fprintf(stream, "%.*s", *msg == 'b' ? va_arg(args, int) : (int)strlen(r3), r3);
+            fprintf(errfd, "%.*s", *msg == 'b' ? va_arg(args, int) : (int)strlen(r3), r3);
         }
     }
 }
