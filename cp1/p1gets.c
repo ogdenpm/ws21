@@ -1,5 +1,7 @@
 #include "cp1.h"
+#if _DEBUG
 void dumptok(tok_t *tok);
+#endif
 extern bool needNL;
 
 char noname[8];
@@ -115,7 +117,9 @@ tok_t *gtok(tok_t *r4) {
             exit(0);
             break;
         }
+#if _DEBUG
     dumptok(r4);
+#endif
     return r4;
 }
 
@@ -177,6 +181,7 @@ void wsperror(char *arg_2) {        // modified to use modern C I/O
 
 void putch(int arg_2) {
     putc(arg_2, outfd);
+#ifdef _DEBUG
     if (needNL)
         putchar(' ');
     printf("%02X", arg_2 & 0xff);
@@ -189,6 +194,7 @@ void putch(int arg_2) {
     //    outCnt = 0;
     //}
     //outBuf[outCnt++] = arg_2;
+#endif
 }
 
 void recover(char *arg_2) {
