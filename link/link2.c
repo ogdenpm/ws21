@@ -139,12 +139,16 @@ void drcopy() {
 
 
 
-typedef int (*ifunc)();
-
+#ifdef _MSC_VER
 int endeup(void) {
+#else
+void endeup(int n, void *p) {
+#endif
     fclose(tfd);
     remove(uname());
-    return nxtexit;
+#ifdef _MSC_VER
+    return 0;
+#endif
 }
 
 int link1(FILE *fp, int arg_4) {
@@ -263,7 +267,7 @@ int main(int argc, char **argv) {
 
     getflags(&argc, &argv, "a,b##,c,db##,dr#,d,eb*,ed*,et*,h,l*>o*,r,tb##,t,u*>x#:F <files>",
         &afl, &bpad, &cfl, &dbias, &dround, &dfl, &endbss, &enddata, &endtext, &hfl, &llist, &ofile, &rfl, &tbias, &tfl, &ulist, &xfl);
-    (long)drmask = (1L << (dround & 0xf)) + ~0;
+    drmask = (1L << (dround & 0xf)) + ~0L;
 
     for (r4 = ulist.ntop; r4 < 10; r4++)
         addusym(ulist.val[r4]);
@@ -329,7 +333,12 @@ int mid2() {
     if (!afl && !rfl) {
         if ((tfd = fopen(uname(), "w+b")) == NULL)
             error("can't create tmp file", 0);
-        _onexit(endeup);
+#ifdef _MSC_VER
+        onexit(endeup);
+#else
+        on_exit(endeup, NULL);
+#endif
+
         signal(SIGINT, signalHandler);
     }
     if (cfl) {
@@ -387,9 +396,9 @@ int mid2() {
 int pass1(int arg_2, char **arg_4) {
     char hdr[26];                   /// fix to read 26 byte header to align with lib & ar.h
     char *var_E;
-    long var_C;
+    long loff;
     int magic;
-    uint16_t r4;
+    uint16_t hsize;
     FILE *fpin;
 
     gtlfile(0, 0, 0);       // dummy args added
@@ -404,20 +413,20 @@ int pass1(int arg_2, char **arg_4) {
         else if (magic != 0xff75 && magic != 0xff6d && magic != 0xff65)
             error("bad file format: ", var_E);
         else {
-            r4 = magic == 0xff65 ? 26 : 16;         // fixed to load 26 bytes for v7 header
-            var_C = 2;
+            hsize = magic == 0xff65 ? 26 : 16;         // fixed to load 26 bytes for v7 header
+            loff = 2;
 
-            while (fread(hdr, 1, r4, fpin) == r4 && *hdr) {
+            while (fread(hdr, 1, hsize, fpin) == hsize && *hdr) {
                 if (binhdr != gtmagic(fpin))
                     error("bad library file in ", var_E);
                 else if (link1(fpin, 0))
-                    addlib(var_C + r4);
+                    addlib(loff + hsize);
                 // bug fix offsets here reflected v7 ar format but hdr assumed to be 24 vs. 26 bytes
                 // also lstoi returns integer so low word with high bit set converts to -ve number
-                var_C += (magic != 0xff65 ? lstoi(hdr + 14) : (long)(lstoi(hdr + 22) << 16) + (lstoi(hdr + 24) & 0xffff)) + r4;
+                loff += (magic != 0xff65 ? lstoi(hdr + 14) : ((long)lstoi(hdr + 22) << 16) + (lstoi(hdr + 24) & 0xffff)) + hsize;
                 if (magic != 0xff75) // 1d91
-                    var_C += (var_C & 1);
-                fseek(fpin, var_C, 0);
+                    loff += (loff & 1);
+                fseek(fpin, loff, 0);
             }
             addlib(0L);
         }

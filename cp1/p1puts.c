@@ -93,12 +93,10 @@ void pend() {
 
 
 int pfloat(wsDouble *arg_2, int r2) {
-    uint8_t *r4 = (uint8_t *)arg_2;
     pcode(0x85);
     pcode(r2);
-    int r3 = 8;
-    while (--r3 >= 0)
-        pcode(*r4++);
+    ptint(*arg_2 >> 32);
+    ptint(*arg_2 & 0xffffffff);
     return r2;
 }
 
@@ -288,10 +286,8 @@ void ptexpr(term_t *r4) {
     }
     if (r4->dataType == D_DOUBLE && r4->term.b15 == 0 && r4->term.b14 == 0) { // 5745
         pcode(8);
-        r2 = 8;
-        char *r3 = r4->name;
-        while (--r2 > 0)
-            pcode(*r3++);
+        ptint(r4->dbl >> 32);
+        ptint(r4->dbl & 0xffffffff);
     } else
         ptname(r4->name);
 
@@ -303,15 +299,13 @@ void ptexpr(term_t *r4) {
 
 
 
-void ptint(long arg_2) { 
-    pcode((arg_2 >> 16) & 0xff);
-    pcode(arg_2 >> 24);
-    pcode(arg_2 & 0xff);
-    pcode((arg_2 >> 8) & 0xff);
+void ptint(long arg_2) {                // convert to PDP-11 format so that cp/m p2 can read
+    ptlab(arg_2 >> 16);
+    ptlab(arg_2 & 0xffff);
 }
 
 
-void ptlab(short arg_2) {
+void ptlab(short arg_2) {               // convert to PDP-11 format so that cp/m p2 can read
     pcode(arg_2 & 0xff);
     pcode((arg_2 >> 8) & 0xff);
 }

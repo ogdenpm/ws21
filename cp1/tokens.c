@@ -130,7 +130,7 @@ static map_t dataTypes[] = {
     {0xff, NULL}
 };
 
-static showEnum(map_t *table, int val) {
+static void showEnum(map_t *table, int val) {
     while (table->code != val && table->code != 0xff)
         table++;
     if (table->code != 0xff)
@@ -155,7 +155,7 @@ void dumptok(tok_t *tok) {
             printf(" %.8s", tok->name);
             break;
         case C_UINT32: case C_INT32: case C_UINT16: case C_INT16: case C_UINT8: case C_INT8:
-            printf(" %8" PRIX32, tok->lng);
+            printf(" %8lX", tok->lng);
             break;
         case C_STRING:
             printf(" %.*s", tok->len, tok->str);

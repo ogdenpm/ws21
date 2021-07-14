@@ -39,7 +39,7 @@ lookup_t L0E3B[] = {
 int iflag;
 int lno = 1;
 int nerrors;
-char *L10B5;
+char *ofile;
 char *sname;
 int tval;
 token_t *code, *data, *elc;
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 				break;
 		case 'o':
 			if (--argc > 1)
-				L10B5 = *++argv;
+				ofile = *++argv;
 			else {
 				fprintf(stderr, "missing file name to -o flag\n");
 				exit(0);
@@ -261,19 +261,19 @@ int main(int argc, char **argv)
 	}
 
 
-	if (!L10B5 && argc > 0 && argv[0][n = (int)(strlen(argv[0]) - 1)] == '8' && n < 15) {
-		L10B5 = name;
+	if (!ofile && argc > 0 && argv[0][n = (int)(strlen(argv[0]) - 1)] == '8' && n < 15) {
+		ofile = name;
 		strcpy(name, argv[0]);
 		name[n] = 'm';
 	}
 
-	if (L10B5) {
-		if (freopen(L10B5, "w", stdout) == 0) {
-			error("can't create %s", L10B5);
+	if (ofile) {
+		if (freopen(ofile, "w", stdout) == 0) {
+			error("can't create %s", ofile);
 			exit(0);
 		}
 	}
-	puthdr(L10B5 ? L10B5 : argc > 0 ? argv[0] : 0);
+	puthdr(ofile ? ofile : argc > 0 ? argv[0] : 0);
 	code = addsym(".text");
 	data = addsym(".data");
 	elc = addsym(".");

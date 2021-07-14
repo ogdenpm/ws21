@@ -73,8 +73,7 @@ tok_t *gtok(tok_t *r4) {
 
     while ((r4->code = getch()) == C_LINENO || r4->code == C_FILE) {
         if (r4->code == C_LINENO) {
-            lineno = getch();
-            lineno += getch() * 256;
+            getstr((char *)&lineno, 2);
         } else {
             r2 = needc();
             var_8 = alloc(r2 + 1, 0);
@@ -89,7 +88,7 @@ tok_t *gtok(tok_t *r4) {
     else if ((r4->code & 0xf0) == 0x10)
         switch (r4->code) {
         case C_DBL:
-            getstr((char *)&r4->dbl, 8);    // read double in ws format
+            getstr((char *)&r4->dbl, 8);    // read double in raw format
             break;
         case C_ID:
             if ((r2 = needc()) > 8)
@@ -100,14 +99,10 @@ tok_t *gtok(tok_t *r4) {
                 r4->name[r2++] = 0;
             break;
         case C_UINT32: case C_INT32: case C_UINT16: case C_INT16: case C_UINT8: case C_INT8:
-            r4->lng = getch() * 256 * 256;
-            r4->lng += getch() * 256 * 256 * 256;
-            r4->lng += getch();
-            r4->lng += getch() * 256;
+            getstr((char *)&r4->lng, 4);        // read long in raw
             break;
         case C_STRING:
-            r4->len = getch();
-            r4->len += getch() * 256;
+            getstr((char *)&r4->len, 2);
             r4->str = alloc(r4->len, 0);
             for (r3 = 0; r3 < r4->len; r3++)
                 r4->str[r3] = needc();

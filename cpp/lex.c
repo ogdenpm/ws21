@@ -110,39 +110,39 @@ token_t *lexchar(token_t *r4) {
 */
 
 
-token_t *lexfloa(token_t *arg_2) {
-    char *r2;
+token_t *lexfloa(token_t *p) {
+    char *s;
     int r4;         // digits after .
-    short var_C;      // exponent
+    short exp;      // exponent
     int var_A;      // scaling
-    int var_8;      // sign
+    int minus;      // sign
 #ifdef NATIVE
     double var_14 = 0.0;
 #else
     int skipped;
     uint64_t var_14 = 0;
 #endif
-    r2 = arg_2->tok;
+    s = p->tok;
 
 #ifdef NATIVE
     r2 += flaccum(r2, &var_14, arg_2->toklen);
 #else
-    r2 += flaccum(r2, &var_14, arg_2->toklen, &skipped);
+    s += flaccum(s, &var_14, p->toklen, &skipped);
 #endif
 
-    r2 = lexfnxt(&arg_2, r2);
-    if (*r2 == '.') {
-        arg_2 = arg_2->next;
-        r2 = arg_2->tok;
+    s = lexfnxt(&p, s);
+    if (*s == '.') {
+        p = p->next;
+        s = p->tok;
 #ifdef NATIVE
         r4 = flaccum(r2, &var_14, arg_2->toklen);
         var_A = -r4;
 #else
         var_A = skipped;
-        r4 = flaccum(r2, &var_14, arg_2->toklen, &skipped);
+        r4 = flaccum(s, &var_14, p->toklen, &skipped);
         var_A -= (r4 - skipped);
 #endif
-        r2 += r4;
+        s += r4;
     } else
 #ifdef NATIVE
         var_A = 0;
@@ -150,24 +150,24 @@ token_t *lexfloa(token_t *arg_2) {
         var_A = skipped;
 #endif
 
-    r2 = lexfnxt(&arg_2, r2);
-    if (tolower(*r2) == 'e') { // 2174
-        r2++;
-        r2 = lexfnxt(&arg_2, r2);
-        var_8 = 0;
-        if (*r2 == '+')
-            r2++;
-        else if (*r2 == '-') {
-            r2++;
-            var_8 = 1;
+    s = lexfnxt(&p, s);
+    if (tolower(*s) == 'e') { // 2174
+        s++;
+        s = lexfnxt(&p, s);
+        minus = 0;
+        if (*s == '+')
+            s++;
+        else if (*s == '-') {
+            s++;
+            minus = 1;
         }
 
-        r2 = lexfnxt(&arg_2, r2);
-        r2 += btos(r2, arg_2->toklen - (r2 - arg_2->tok), &var_C, 10);
-        if (var_8)
-            var_A -= var_C;
+        s = lexfnxt(&p, s);
+        s += btos(s, p->toklen - (s - p->tok), &exp, 10);
+        if (minus)
+            var_A -= exp;
         else
-            var_A += var_C;
+            var_A += exp;
     }
 #ifdef NATIVE
     var_14 = dtento(var_14, var_A);
@@ -176,15 +176,15 @@ token_t *lexfloa(token_t *arg_2) {
     wsDouble wsDbl = mkWsDouble(var_14, var_A);
     putcode("c8", C_DBL, &wsDbl);
 #endif
-    if (arg_2->tok != r2) {
-        if (arg_2->tok + arg_2->toklen == r2)
-            arg_2 = arg_2->next;
+    if (p->tok != s) {
+        if (p->tok + p->toklen == s)
+            p = p->next;
         else {
-            arg_2 = arg_2->next;
+            p = p->next;
             wperror("illegal float constant");
         }
     }
-    return arg_2;
+    return p;
 }
 
 
@@ -262,23 +262,23 @@ token_t *lexstri(token_t *r4) {
 }
 
 
-#if 0
-void putcode(char *r2, char *arg_4 /*...*/) {        // to fix variable args
-    int var_8;
-    char **r4;
-    char *r3;
-    for (r4 = &arg_4; *r2; r2++) {
-        if (*r2 == 'c')
-            putch((int)*r4++ & 0xff);
+#if 1
+void putcode(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    for (; *fmt; ++fmt)
+        if (*fmt == 'c')
+            putc(va_arg(args, unsigned) & BYTMASK, ofd);
         else {
-            r3 = *r4++;
-            var_8 = *r2 == 'b' ? *r4++ : *r2 == 'p' ? lenstr(r3) : *r2 - '0';
-            while (--var_8 >= 0)
-                putch(*r3++ & 0xff);
-            r2++;
+            TEXT *q = va_arg(args, TEXT *);
+            COUNT i = (*fmt == 'b') ? va_arg(args, unsigned) : (*fmt == 'p') ? strlen(q) : *fmt - '0';
+            while (0 <= --i)
+                putc(*q++ & 0xff, ofd);
         }
-    }
+    va_end(args);
 }
+
 #else
 void putWInt(uint16_t val) {        // little edian order 
     putc(val, ofd);
@@ -293,19 +293,21 @@ void putWLong(uint32_t val) {       // pdp 11 order, high word, low word both in
 void putcode(char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    char *r3;
+    char *q;
+    int c;
+    char *s;
 
     for (; *fmt; fmt++) {
         switch (*fmt) {
         case 'c':
-            putc(va_arg(args, int), ofd);
+            putc(c = va_arg(args, int), ofd);
             break;
         case 'p':
-            fprintf(ofd, "%s", va_arg(args, char *));
+            fprintf(ofd, "%s", s = va_arg(args, char *));
             break;
         case 'b':
-            r3 = va_arg(args, char *);
-            fwrite(r3, 1, va_arg(args, int), ofd);
+            q = va_arg(args, char *);
+            fwrite(q, 1, c = va_arg(args, int), ofd);
             break;
         case '2':
             putWInt(*va_arg(args, uint16_t *));
@@ -314,7 +316,7 @@ void putcode(char *fmt, ...) {
             putWLong(*(va_arg(args, uint32_t *)));
             break;
         case '8':
-            fwrite(va_arg(args, uint8_t *), 1, 8 , ofd);        // write the double as an 8 byte sequences. wsDouble is in the righ format
+            fwrite(s = va_arg(args, uint8_t *), 1, 8 , ofd);        // write the double as an 8 byte sequences. wsDouble is in the righ format
             break;
         default:
             fprintf(stderr, "invalid putcode %c type\n", *fmt);

@@ -20,7 +20,7 @@ FILE *errfd;
 char *ofile;
 int nerrors = 0;
 char *infile;
-int lineno = 0;
+short lineno = 0;
 FILE *outfd;
 case_t *casetab;
 term_t *exlist;

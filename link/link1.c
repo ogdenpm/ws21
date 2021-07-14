@@ -122,12 +122,12 @@ uint8_t getby(int arg_2) {
             iseek = var_A;
         }
                                     // read in the buffer
-        if ((r4->size = (int16_t)fread(r4->buf, 1, 64, ifd)) == 0 && ferror(ifd))
+        if ((r4->size = (int16_t)fread(r4->buf, 1, 64, ifd)) == 0)
             error("read error in pass2", 0);
         iseek += r4->size;          // update for next read
         r4->fpos += r4->size;       
-        r4->off -= 64;              // adjust offset
-        if (r4->off > r4->size)    // not enough data
+        r4->off -= 64;              // adjust offset 
+        if (r4->off >= r4->size)    // not enough data
             error("early EOF in pass2", 0);       // missing arg added
     }
     return r4->buf[r4->off++];
@@ -244,30 +244,31 @@ void relby(int arg_2, int arg_4) {
     register int r4 = arg_2;
     int var_8;
     iobuf_t *r3;
-    static oseek[2];
+    static long oseek[2];
     int r2;
 //    printf("relby(%d %02X)\n", arg_2, arg_4);
     r3 = &obuf[r4 & 3];
     var_8 = r4 & 4;
+
     if ((afl || rfl) && (r4 & 0xa) == 2)
         return;
 
     r4 &= 3;
     if (r3->size >= 64 || var_8) { // 2E1D
-        if (oseek[r4 == 3] != r3->fpos && fseek(r4 == 3 ? tfd : ofd, r3->fpos, 0) != 0)
-            goto fail;
-        if ((r2 = r3->size - r3->off) && fwrite(&r3->buf[r3->off], 1, r2, r4 == 3 ? tfd : ofd) != r2) //2DB0
-            goto fail;
-        r3->fpos += r2;
-        r3->off = 0;
-        r3->size = 0;
-        oseek[r4 == 3] = r3->fpos;
+        if (oseek[r4 == 3] != r3->fpos && fseek(r4 == 3 ? tfd : ofd, r3->fpos, 0) != 0 ||
+            (r2 = r3->size - r3->off) &&
+            fwrite(r3->buf + r3->off, 1, r2, r4 == 3 ? tfd : ofd) != r2) //2DB0
+            error("can't write ", r4 == 3 ? "temp file" : "output file");
+        else {
+            r3->fpos += r2;
+            r3->off = 0;
+            r3->size = 0;
+            oseek[r4 == 3] = r3->fpos;
+        }
     }
     if (var_8 == 0)
         r3->buf[r3->size++] = arg_4;
-    return;
-fail:
-    error("can't write ", r4 == 3 ? "temp file" : "output file");
+
 }
 
 

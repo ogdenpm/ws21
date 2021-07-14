@@ -1,10 +1,13 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#ifdef _MSC_VER
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "std.h"
 #include "support.h"
@@ -69,7 +72,6 @@ extern char *iprefix;
 extern char *_pname;
 extern char **argv;
 extern int argc;
-extern FILE *errfd;
 extern pincl_t *pincl;
 extern int nerrors;
 extern int pflag;
@@ -132,18 +134,15 @@ void wperror(char *msg, ...);
 #endif
 void predef(list_t *r4);
 int punct(token_t *r4, int arg_4);
-#if 0
-void putcode(char *r2, char *arg_4 /*...*/);
-#else
+
 void putcode(char *fmt, ...);
-#endif
 void putls(token_t *r4);
 
 token_t *putgr(token_t *r4, int r2);
 void putns(token_t *r4);
 int scntab(code_t *group, unsigned grplen, const char *token, unsigned toklen);
 token_t *stotl(char *r4);
-void undef(r4, arg4);
+void undef(char *r4, int arg4);
 
 
 

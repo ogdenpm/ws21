@@ -2,13 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 /*
  based on decompiled source of whitesmith's getflags function
  key changes
  1) changed to use stdarg as the original code would fail for modern processors for the following reasons
     a) size of char * and int are not guaranteed to be the same
-	b) paarameter passing registers is likely to break how the arguments were indexed as they were treated as an array of pointers
+	b) parameter passing registers is likely to break how the arguments were indexed as they were treated as an array of pointers
 	c) related to above, although most pointers are likely to be same size this is not guaranteed
  2) the structure to return a list of values was modified to reflect that sizeof char * and int are not guaranteeed to be the same
  3) I/O was done using write to STDERR, modified to use putc and fputs to stderr
@@ -22,12 +23,31 @@
 #include "std.h"
 #include "support.h"
 
+// bacause sizeof(int) might not equal sizeof(char *)
+// this version requires explicit types for list
+// also added support for long as now easy to add
 
+typedef struct {
+	BYTES ntop;
+	union {
+		TEXT *asval[1];
+		BYTES aival[1];
+		LONG alval[1];
+	};
+} multiArg_t;
 
-static int wputch(FILE *fp, const char *arg2, int arg3);
+typedef union {
+	TEXT *sval;
+	BYTES ival;
+	LONG  lval;
+	multiArg_t marg;
+} argType_t;
 
-static void expandFlags(const char *diagnostic, const char *fmt)
-{
+enum argtype { None, String, Integer, Long };		// the different arg types
+
+static int wputch(FILE *fp, const char *s, int col);
+
+static void expandFlags(const char *diagnostic, const char *fmt) {
 	COUNT col = usage(0);
 
 	for (; *diagnostic; diagnostic++) {
@@ -54,165 +74,127 @@ static void expandFlags(const char *diagnostic, const char *fmt)
 		}
 	}
 	putc('\n', stderr);
-	exit(0);
+	exit(1);
 }
+/*	collect flags from command argument list
+ */
+char *getflags(int *pac, char ***pav, const char *fmt, ...) {
+	bool atEnd;
+	char *s;		// useful pointer
+	argType_t val, *p;
 
-enum { String, Integer, Long};		// basic data type
+	va_list args;
 
-char *getflags(int *pac, char ***pav, const char *fmt, ...)
-{
-	va_list args = NULL;
-
-	int match;
-	int atEnd;
-	int base;
-	int numOffset;
-	long nval = 0;
-	char *sval = NULL;
-	char *s;			// useful pointer
-
-	va_start(args, fmt);
-	for (++*pav; *pac && --*pac; ++*pav) {
-
+	for (++ *pav; *pac && -- * pac; ++ * pav) {
 		char *r2 = **pav;
-		if (strcmp(r2, "--") == 0) {
+
+		if (!strcmp(r2, "--")) {
 			--*pac;
 			++*pav;
 			break;
-		}
-		if (strcmp(r2, "-") == 0 || (*r2 != '-' && *r2 != '+'))
+		} else if (!strcmp(r2, "-") || (*r2 != '-' && *r2 != '+'))
 			break;
 		if (*r2 == '-')
 			++r2;
 		while (*r2) {
 			const char *r4 = fmt;
-			atEnd = match = 0;
-			TEXT *r3 = r2;
-
-			int type;
-			for (; atEnd == 0; r4++) {
+			char *r3 = r2;
+			enum argtype type = None;
+			va_start(args, fmt);
+			for (atEnd = false, p = va_arg(args, argType_t *); !atEnd; ++r4) {
 				switch (*r4) {
 				case '*':
 					type = String;
-					match = 1;
-					sval = *r3 != 0 ? r3 : --*pac != 0 ? *++* pav : r3;
-					r3 = strchr(sval, '\0');
+					val.sval = *r3 ? r3 : --*pac ? *++*pav : r3;
+					r3 = strchr(val.sval, '\0');
 					break;
-				case '?':				// boolean is numeric
-					type = Integer;
-					match = 1;
-					nval = *r3;
+				case '?':
+					type = Integer;		// boolean is numeric
+					val.ival = *r3;
 					if (*r3)
-						r3++;
+						++r3;
 					break;
 				case '#':
-					if (*r3 == 0)			// next arg if nothing left on this one
-						r3 = (-- * pac) ? *++ * pav : r3;
-
-					// original sets numOffset to skip past any +/- but always checks on first char
-					// this means that for [+-]num, num is always treated as decimal
-					// this has some logic to it, altough it would be simple to use strtol sign and auto base handling
-					match = (numOffset = *r3 == '-' || *r3 == '+') || (isdigit(*r3));
-					if (*r3 != '0')
-						base = 10;
-					else if (tolower(r3[1]) == 'x')
-						base = 16;
-					else
-						base = 8;
-
-					nval = strtol(r3, &s, base);
-					if (s <= r3 + numOffset)		// failed to parse a number (might have had sign only)
-						match = 0;
-					if (tolower(*s) == 'l')			// btol absorbs training l/L
-						s++;
-					if (match == 0 || *(r3 = s)) {
+					if (!*r3)			// next arg if nothing left on this one
+						r3 = --*pac ? *++*pav : r3;
+					s = r3;
+					val.lval = strtoul(r3, &r3, 0);		// let strtoul handle all of the conversion
+					if (s == r3 || *r3)
 						if (s = strchr(r4, ':'))
-							expandFlags(s + 1, fmt);		// user diagnostic exit
+							expandFlags(s + 1, fmt);
 						else
-							return r2;									// return rest of arg
-					}
-					if (r4[1] == '#' && r4[2] != '>') {					// ## option only if not list
-						type = Long;
+							return (r2);
+					if (r4[1] == '#') {
 						r4++;
-					} else
+						type = Long;
+					} else {
 						type = Integer;
+						val.ival = (int)val.lval;		// convert to int
+					}
 					break;
-
-				case ',':
+				case '\0':
 				case ':':
-				case 0:
-					if (match) {
-						switch (type) {
-						case String: *va_arg(args, char **) = sval; break;
-						case Integer: *va_arg(args, int *) = nval; break;
-						case Long: *va_arg(args, long *) = nval; break;
+					if (type == None) {
+						if (!*r4)
+							return r2;
+						expandFlags(++r4, fmt);
+					}
+				case ',':
+					if (type != None) {
+						switch (type) {		// save the correct format
+						case String:    p->sval = val.sval; break;
+						case Integer:   p->ival = val.ival; break;
+						case Long:      p->lval = val.lval; break;
 						}
 						r2 = r3;
-						atEnd = 1;
-					} else if (*r4 == 0)
-						return r2;										// return rest of arg if no match
-					else if (*r4 == ':')
-						expandFlags(++r4, fmt);							// user defiend diagnostic
-					else {
-						switch (type) {
-						case String: va_arg(args, char **); break;
-						case Integer: va_arg(args, int *); break;
-						case Long: va_arg(args, long *); break;
-						}
-					}
-					r3 = r2;
-					break;
-
-				case '>':
-					if (match) {
-						many_t *pl = va_arg(args, many_t *);
-						if (pl->ntop != 0) {								// if space then save arg
-							if (type == String)
-								pl->val[--pl->ntop].s = sval;
-							else
-								pl->val[--pl->ntop].i = nval;
-							r2 = r3;
-							atEnd = 1;
-						} else if (s = strchr(r4, ':')) {	// user diagnostic
-							expandFlags(s + 1, fmt);
-						} else
-							return r2;									// return where we ended
+						atEnd = true;
 					} else {
-						va_arg(args, many_t *);			// skip the arg
 						r3 = r2;
+						p = va_arg(args, argType_t *);
+					}
+					break;
+				case '>':
+					if (type != None) {
+						if (p->marg.ntop > 0) {
+							p->marg.ntop--;
+							switch (type) {	// save the correct list arg format
+							case String:    p->marg.asval[p->marg.ntop] = val.sval; break;
+							case Integer:   p->marg.aival[p->marg.ntop] = val.ival; break;
+							case Long:      p->marg.alval[p->marg.ntop] = val.lval; break;
+							}
+							r2 = r3;
+							atEnd = YES;
+						} else if (s = strchr(r4, ':'))
+							expandFlags(s + 1, fmt);
+						else
+							return (r2);
+					} else {
+						r3 = r2;
+						p = va_arg(args, argType_t *);
 					}
 					break;
 				default:
-					type = Integer;
-					if (*r4 == *r3) {									// char match (set true flag)
-						match = 1;
-						nval = 1;
-						r3++;
+					if (*r4 == *r3) {
+						type = Integer;
+						val.ival = YES;
+						++r3;
 					} else {
-						match = 0;										// skip to next option
-
-						while (*r4 != ',' && *r4 != '>' && *r4 != ':' && *r4 != '\0') {
-							if (*r4 == '*')
-								type = String;
-							else if (*r4 == '#' && r4[1] == '#') {
-								r4++;
-								type = Long;
-							}
+						type = None;
+						while (*r4 != ',' && *r4 != '>' && *r4 != ':' && *r4)
 							++r4;
-						}
-						--r4;											// backup so for loop picks up the break char 
+						--r4;
 					}
 					break;
 				}
-			}
-			va_end(args);			// reset args
-			va_start(args, fmt);
-		}
 
+
+			}
+			va_end(args);
+		}
 	}
-	va_end(args);
-	return 0;
+	return (NULL);
 }
+
 
 
 static int wputch(FILE *fp, const char *s, int col)

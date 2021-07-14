@@ -20,5 +20,5 @@ short usage(const char *msg);
 FILE *getfiles(int *pac, char ***pav, FILE *dfd, FILE *efd);
 int prefix(char *s1, char *s2);
 int mkexec();
-char *buybuf(char *s, int n);
+char *buybuf(char *s, int size);
 int scanstr(char *s, int c);

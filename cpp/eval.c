@@ -64,33 +64,33 @@ code_t punctTab[] = {
     { "\x3" "\\!!", C_OROR}
 };
 
-int doesc(char *arg_2, char *r4, int arg_6) {
-    uint8_t var_9;
-    int var_8; 
+int doesc(char *buf, char *s, int n) {
+    uint8_t i, j;
+    COUNT sum;
 
-    char *r2 = arg_2;
-    int r3;
 
-    arg_6 = max(2, arg_6);
-    for (r3 = 0; r3 < arg_6; r3++) {
-        if (*r4 != '\\')
-            *r2++ = *r4++;
-        else if (escChar[var_8 = scanstr(escChar,*++r4)]) {
-            *r2++ = escMap[var_8];
-            r4++;
-            r3++;
-        } else if (isdigit(*r4)) {
-            var_9 = 0;
-            for (var_8 = 0; var_8 < 3 && isdigit(*r4); var_8++, r4++) 
-                var_9 = var_9 * 8 + *r4 - '0';
-            *r2++ = var_9;
-            r3 += var_8;
+    char *q = buf;
+
+    n = max(2, n);
+    for (i = 0; i < n; i++) {
+        if (*s != '\\')
+            *q++ = *s++;
+        else if (escChar[j = scanstr(escChar,*++s)]) {
+            *q++ = escMap[j];
+            s++;
+            i++;
+        } else if (isdigit(*s)) {
+            sum = 0;
+            for (j = 0; j < 3 && isdigit(*s); j++, s++) 
+                sum = (sum << 3) + *s - '0';
+            *q++ = 0xff & sum;
+            i += j;
         } else {
-            *r2++ = *r4++;
-            r3++;
+            *q++ = *s++;
+            i++;
         }
     }
-    return r2 - arg_2;
+    return q - buf;
 }
 
 

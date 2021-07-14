@@ -1,6 +1,5 @@
 #include "cpp.h"
 #include <stdarg.h>
-#include <io.h>     // for access
 sym_t *hashTable[128];
 
 
@@ -143,14 +142,14 @@ void errfmt_va(char *msg, va_list args) {
 
     for (; *msg; msg++) {
         if (*msg != '%')
-            putc(*msg, errfd);
+            putc(*msg, stderr);
         else if (*++msg == 'c')
-            putc(va_arg(args, int), errfd);
+            putc(va_arg(args, int), stderr);
         else if (*msg == 's')
-            fprintf(errfd, "%u", va_arg(args, int));
+            fprintf(stderr, "%u", va_arg(args, int));
         else {
             char *r3 = va_arg(args, char *);
-            fprintf(errfd, "%.*s", *msg == 'b' ? va_arg(args, int) : (int)strlen(r3), r3);
+            fprintf(stderr, "%.*s", *msg == 'b' ? va_arg(args, int) : (int)strlen(r3), r3);
         }
     }
 }
@@ -224,7 +223,7 @@ char *getfnam(token_t *r4) {
             cpybuf(r2, r3, var_A = scanstr(r3, '|'));
             cpybuf(r2 + var_A, r4->next->tok, var_8);
             r2[var_A + var_8] = 0;
-            if (_access(r2, 4) == 0)     // check can read
+            if (access(r2, 4) == 0)     // check can read
                 break;
             r3 += r3[var_A] ? var_A + 1 : var_A;
         }

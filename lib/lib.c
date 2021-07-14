@@ -1,27 +1,35 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_NONSTDC_NO_WARNINGS
-#include <io.h>
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-
+#ifdef _MSC_VER
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include "std.h"
 #include "support.h"
 
 int hsize = 16;
 uint16_t magic = 0xff75;
 int nsize = 14;
-int round;
+int roundAlign;
 long msize;
 int cfl, dfl, pfl, rfl, tfl, vfl, v6fl, v7fl, xfl;
 char *_pname = "lib";
 int vers;
 int nxtexit;
 
+#ifdef _MSC_VER
 int endup(void);
+#else
+void endup(int n, void *p);
+#endif
 int gthdr(FILE *fp, uint8_t *arg_4, int arg_6);
 char *inlist(int arg_2, char **arg_4, char *arg_6);
 FILE *lcreate(char *arg_2);
@@ -57,7 +65,7 @@ long copy(FILE *fpin, FILE *fpout, long arg_6) {
             error("write error", 0);
         var_A += r2;   // 1F4
     }
-    if (arg_6 == 0L && (var_A & round) && putc(0, fpout) == EOF)
+    if (arg_6 == 0L && (var_A & roundAlign) && putc(0, fpout) == EOF)
         error("padding error", 0);
     return (long)var_A;
 }
@@ -77,11 +85,11 @@ int del(int arg_2, char **arg_4, char *arg_6, int arg_8) {
     while (gthdr(fpin, hdr, 1)) {
         if ((var_24 = inlist(arg_2, arg_4, hdr)) == 0) {
             pthdr(fpout, hdr);
-            copy(fpin, fpout, msize + (msize & round));
+            copy(fpin, fpout, msize + (msize & roundAlign));
             if (vfl)
                 report("c ", hdr);
         } else {
-            skip(fpin, msize, round);
+            skip(fpin, msize, roundAlign);
             if (vfl)
                 report("d ", var_24);
         }
@@ -94,10 +102,15 @@ int del(int arg_2, char **arg_4, char *arg_6, int arg_8) {
 
 
 
-
+#ifdef _MSC_VER
 int endup(void) {
+#else
+void endup(int n, void *p) {
+#endif
     remove(uname());
-    return nxtexit;
+#ifdef _MSC_VER
+    return 0;
+#endif
 }
 
 
@@ -138,7 +151,11 @@ FILE *lcreate(char *arg_2) {
         if (arg_2 == 0) {
             arg_2 = uname();
             if (nxtexit++ == 0)
-                _onexit(endup);
+#ifdef _MSC_VER
+                onexit(endup);
+#else
+                on_exit(endup, NULL);
+#endif
             signal(SIGINT, signalHandler);
         }
     if ((fp = fopen(arg_2, "wb")) == 0)
@@ -164,19 +181,19 @@ FILE *lopen(char *arg_2, int arg_4) {
     case 0xff75:
         hsize = 16;
         nsize = 14;
-        round = 0;
+        roundAlign = 0;
         vers = 0;
         break;
     case 0xff6d:
         hsize = 16;
         nsize = 8;
-        round = 1;
+        roundAlign = 1;
         vers = 6;
         break;
     case 0xff65:
         hsize = 26;
         nsize = 14;
-        round = 1;
+        roundAlign = 1;
         vers = 7;
         break;
     default:
@@ -238,7 +255,7 @@ void putback(char *arg_2, long *arg_4, int cnt) {
             else
                 error("replacement botch", 0);
         pthdr(fpout, hdr);
-        copy(fpin, fpout, msize + (msize & round));
+        copy(fpin, fpout, msize + (msize & roundAlign));
     }
     fclose(fpout);
     fclose(fpin);
@@ -286,11 +303,11 @@ int repl(int arg_2, char **arg_4, char *arg_6, int arg_8) {
         while (gthdr(fpin, hdr, 1)) {
             if ((var_28 = inlist(arg_2, arg_4, hdr)) == 0) {
                 pthdr(fpout, hdr);
-                copy(fpin, fpout, msize + (msize & round));
+                copy(fpin, fpout, msize + (msize & roundAlign));
                 if (vfl)
                     report("c ", hdr);
             } else {
-                fseek(fpin, msize + (msize & round), 1);
+                fseek(fpin, msize + (msize & roundAlign), 1);
                 if ((fpmod = fopen(hdr, "rb")) == 0)         // get file name from hdr
                     error("can't read ", hdr);
 
@@ -371,7 +388,7 @@ int tab(int arg_2, char **arg_4, char *arg_6, int arg_8) {
                 report(hdr, vstr);
             } else
                 report(hdr, 0);
-            skip(fpin, msize, round);
+            skip(fpin, msize, roundAlign);
     }
     fclose(fpin);
     return 1;
@@ -396,7 +413,7 @@ int xtract(int arg_2, char **arg_4, char *arg_6, int arg_8) {
 
     while (gthdr(fpin, hdr, 1)) {
         if (inlist(arg_2, arg_4, hdr) == 0 && r4 == 0)
-            skip(fpin, msize, round);
+            skip(fpin, msize, roundAlign);
         else {
             if (arg_8 == 0) {
                 if ((fpout = fopen(hdr, "wb")) == 0)
@@ -405,7 +422,7 @@ int xtract(int arg_2, char **arg_4, char *arg_6, int arg_8) {
                 fpout = stdout;
 
             copy(fpin, fpout, msize);
-            skip(fpin, msize & round, 0);
+            skip(fpin, msize & roundAlign, 0);
             if (arg_8 == 0)
                 fclose(fpout);
             if (vfl)

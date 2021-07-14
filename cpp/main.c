@@ -12,9 +12,9 @@ char *iprefix = "|";
 char *_pname = "pp";
 char **argv;
 int argc;
-FILE *errfd;
 FILE *ofd;              // added
 pincl_t *pincl;
+
 int nerrors;
 int pflag;
 code_t cppKeyword[] = {
@@ -87,7 +87,7 @@ char *getln(pincl_t *arg_2) {
     char var_B;
     int var_A;
     int var_8;
-    char *r3;
+    uint8_t *r3;
     int r4;
     fio_t *r2;
 
@@ -106,7 +106,7 @@ char *getln(pincl_t *arg_2) {
             for (var_8 = 2; var_8 < r4 - 1; var_8++)
                 if (r3[var_8] == '*' && r3[var_8 + 1] == '/')
                     break;
-                ;
+
             if (var_8 < r4 - 1) { // 625
                 *r3++ = ' ';
                 r4 -= (var_8 + 2);
@@ -156,14 +156,11 @@ int main(int _argc, char **_argv) {
     if (oFile) {
         if ((ofd = fopen(oFile, xflag != 0 ? "wb" : "wt")) == NULL)
             wperror("bad output file");
-        else
-            errfd = stdout;
     } else {
         ofd = stdout;
 #ifdef _WIN32
         _setmode(_fileno(stdout), _O_BINARY);
 #endif
-        errfd = stderr;
     }
 
     while (r4 = putgr(getex(), 0)) {

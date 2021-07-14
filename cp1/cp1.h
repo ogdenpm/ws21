@@ -8,8 +8,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
+#ifdef _MSC_VER
 #include <io.h>
-
+#else
+#include <unistd.h>
+#endif
 #include "std.h"
 #include "lex.h"
 
@@ -121,7 +124,7 @@ extern FILE *errfd;
 extern char *ofile;
 extern int nerrors;
 extern char *infile;
-extern int lineno;
+extern short lineno;
 extern FILE *outfd;
 extern case_t *casetab;
 extern term_t *exlist;
@@ -149,7 +152,7 @@ int ptype(int arg_2);
 int maxify(int arg_2);
 sym_t *lookup(char *arg_2, sym_t *r4, sym_t *arg_6);
 uint16_t lname(char *r4);
-int itype(arg_2);
+int itype(int arg_2);
 int iscons(term_t *r4);
 void fixlint();
 bool exmatch(sym_t *arg_2, sym_t *arg_4);
@@ -175,7 +178,7 @@ bool canmul(term_t *r4, term_t *r2);
 bool canadd(term_t *r4, term_t *r2);
 bool cachk(term_t *r4);
 int rbuy(int r4, int *r2);
-void pvoid(arg_2);
+void pvoid(term_t *arg_2);
 void ptname(char *r4);
 void ptlab(short arg_2);
 void ptint(long arg_2);
@@ -267,13 +270,12 @@ void *alloc(unsigned, void *);
 unsigned scnstr(const uint8_t *, uint16_t );        // 2nd arg is actuall uint8_t, this hack prevents lots of warnings.
 void *wsfree(void *, void *);
 unsigned inbuf(char *, unsigned, char *);
-unsigned itob(char *s, int, short);
 void wsperror(char *);
 int cmpbuf(char *, char *, unsigned);
 char *buybuf(char *, unsigned);
 char *getflags(int *pac, char ***pav, const char *fmt, ...);
 void *frelst(void *, void *);
-wsDouble long2WsDouble(long matissa);
+uint64_t mkWsDouble(uint64_t matissa, short exp);
 
 
 

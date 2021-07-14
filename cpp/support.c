@@ -51,7 +51,7 @@ unsigned scanstr(const uint8_t *s, uint8_t c) {
 }
 
 char *buybuf(char *s, unsigned len) {
-    char *buf = malloc(len);
+    char *buf = alloc(len, 0);
     memcpy(buf, s, len);
     return buf;
 }
@@ -66,7 +66,8 @@ void *alloc(unsigned nbytes, void *link) {
         fprintf(stderr, "out of memory\n");
         exit(1);
     }
-    ((link_t *)p)->next = link;
+    if (nbytes >= sizeof(link_t *))
+        ((link_t *)p)->next = link;
     return p;
 }
 
@@ -208,42 +209,42 @@ double dtento(double dnum, short exp) {
     Note I could not use the IEEE double format since it trades precision for exponent size.
 
 */
-wsDouble mkWsDouble(uint64_t matissa, short exp) {
+uint64_t mkWsDouble(uint64_t matissa, COUNT exp) {
     if (matissa == 0)       // zero result quick return 
         return 0;
-    while (exp > 0 && matissa < ULLONG_MAX / 10) {  // maximise bit usage for +ve exponents
+    while (exp > 0 && matissa < UINT64_MAX / 10) {  // maximise bit usage for +ve exponents
         exp--;
         matissa *= 10;
     }
 
 
-    short wExp = 184;
+    short wExp = 184;					// this would be marginally faster if the non portable bit functions were used
     // normalise to 64 bits
-    if (matissa < (1ui64 << 32)) {
+    if (matissa < (1ull << 32)) {
         wExp -= 32;
         matissa <<= 32;
     }
-    if (matissa < (1ui64 << 48)) {
+    if (matissa < (1ull << 48)) {
         wExp -= 16;
         matissa <<= 16;
     }
-    if (matissa < (1ui64 << 56)) {
+    if (matissa < (1ull << 56)) {
         wExp -= 8;
         matissa <<= 8;
     }
 
-    while (matissa < (1ui64 << 63)) {      // finish normailsation to 64bits
+    while (matissa < (1ull << 63)) {      // finish normailsation to 64bits
         wExp--;
         matissa <<= 1;
     }
 
     if (exp < 0) {
         while (exp < 0) {
-            while (matissa < (1ui64 << 63)) {
+            while (matissa < (1ull << 63)) {	// scale matissa back to max possible
                 wExp--;
                 matissa <<= 1;
             }
-            if (++exp == 0)
+            if (++exp == 0)					// minor optimisation use / 100 if exp allows
                 matissa /= 10;
             else {
                 matissa /= 100;
@@ -252,43 +253,32 @@ wsDouble mkWsDouble(uint64_t matissa, short exp) {
 
         }
     } else {
-        while (exp > 0) {
-            while (matissa > ULLONG_MAX / 10) {
+        while (exp > 0) {						// adjust matissa so we can * 10
+            while (matissa > UINT64_MAX / 10) {
                 wExp++;
                 matissa >>= 1;
             }
-            matissa *= 10;
+            matissa *= 10;						// do the x10
             exp--;
         }
     }
-
 #ifdef ROUND
-    while (matissa >= 0x200000000000000ui64) {
+    while (matissa >= 0x200000000000000ull) {
         wExp++;
         matissa >>= 1;
     }
     matissa++;  // round
 #endif
-    while (matissa >= 0x100000000000000ui64) {
+    while (matissa >= 0x100000000000000ull) {	// scale the matissa to allow for the exponent
         wExp++;
         matissa >>= 1;
     }
-//    printf("%d %x - %llu %llx\n", wExp, wExp, matissa, matissa);
+    //    printf("%d %x - %llu %llx\n", wExp, wExp, matissa, matissa);
     if (wExp <= 0)
         return 0;
     if (wExp > 255)
-        return 0x7fffffffffffffffui64;
-    matissa = (matissa & 0x7fffffffffffffui64) | ((uint64_t)wExp << 55);    // merge in the exponent and, removing matissa high bit
-    // in Whitesmith's code, the double is stored byte swapped !!!
-    union {
-        uint8_t bytes[8];
-        wsDouble dbl;
-    } v;
-    for (int i = 0; i < 8; i += 2, matissa >>= 16) {
-        v.bytes[i] = (uint8_t)(matissa >> 8);
-        v.bytes[i + 1] = (uint8_t)matissa;
-    }
-    return v.dbl;
+        return ~(1ull << 63);
+    return (matissa & ~(1ull << 63)) | ((uint64_t)wExp << 55);    // merge in the exponent and, removing matissa high bit
 }
 
 #endif
@@ -296,7 +286,15 @@ wsDouble mkWsDouble(uint64_t matissa, short exp) {
 unsigned getl(fio_t *pfio, char *s, unsigned n) {
     unsigned cnt;
     int c;
-    for (cnt = 0; cnt < n && ((c = pfio->_nleft ? (pfio->_nleft--, *pfio->_pnext++) : getc(pfio->fp)) != EOF && c) ;) {
+    for (cnt = 0; cnt < n; ) {
+        if (pfio->_nleft)
+            c = (pfio->_nleft--, *pfio->_pnext++);
+        else if ((c = getc(pfio->fp)) == EOF || c == 0 || c == 0x1a)    // exit if cpm EOF
+            break;
+        else if (c == '\r' && (c = getc(pfio->fp)) != '\n') {       // ignore \r if followed by \n
+            ungetc(c, pfio->fp);
+            c = '\r';
+        }
         if ((s[cnt++] = c) == '\n')
             break;
     }

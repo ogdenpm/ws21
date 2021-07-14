@@ -1,12 +1,8 @@
 #include "cp1.h"
-#define ROUNDunsigned itob(char *s, int i, int base)
 
 extern char *_pname;
 
 
-unsigned itob(char *s, int i, short base) {
-    return strlen(itoa(i, s, base));
-}
 
 int16_t lstoi(uint8_t *s) {
     return s[0] + s[1] * 256;
@@ -217,7 +213,7 @@ double dtento(double dnum, short exp) {
 
     Note this function is not an exact match the whitesmith's 8080 code and may deviate in the least signficant bits in some cases
     most likely due to different internal rounding strategies for intermediate values. The biggest difference I have seen is +/- 2
-    to the matissa;
+    to the least significant byte of the matissa;
     Some examples of differences
     1) 1.0E-1  this version rounds the least siginficant bit the Whitesmith's code doesn't
     2) 1.0E32  this version correctly rounds the least significant bit, the Whitesmiths' code has an incorrect rounding as verified
@@ -229,46 +225,76 @@ double dtento(double dnum, short exp) {
     Note I could not use the IEEE double format since it trades precision for exponent size.
 
 */
-wsDouble long2WsDouble(long lng) {
-    short wExp = 184;    // biased exponent, adjusted as number is normalised
-    if (lng == 0L)       // zero result quick return 
+uint64_t mkWsDouble(uint64_t matissa, short exp) {
+    if (matissa == 0)       // zero result quick return 
         return 0;
-    if (lng < 0) {
-        wExp += 256;     // sets the sign bit
-        lng = -lng;
+    while (exp > 0 && matissa < UINT64_MAX / 10) {  // maximise bit usage for +ve exponents
+        exp--;
+        matissa *= 10;
     }
-    uint64_t matissa = (unsigned long)lng;      // don't propagete any sign bit
 
-    // normalise to 56 bits
-    if (matissa < (1ui64 << 24)) {
+
+    short wExp = 184;					// this would be marginally faster if the non portable bit functions were used
+    // normalise to 64 bits
+    if (matissa < (1ull << 32)) {
         wExp -= 32;
         matissa <<= 32;
     }
-    if (matissa < (1ui64 << 40)) {
+    if (matissa < (1ull << 48)) {
         wExp -= 16;
         matissa <<= 16;
     }
-    if (matissa < (1ui64 << 48)) {
+    if (matissa < (1ull << 56)) {
         wExp -= 8;
         matissa <<= 8;
     }
 
-    while (matissa < (1ui64 << 56)) {      // finish normailsation to 56 bits
+    while (matissa < (1ull << 63)) {      // finish normailsation to 64bits
         wExp--;
         matissa <<= 1;
     }
 
-    matissa = (matissa & 0x7fffffffffffffui64) | ((uint64_t)wExp << 55);    // merge in the exponent and, removing matissa high bit
-    // in Whitesmith's code, the double is stored byte swapped !!!
-    union {
-        uint8_t bytes[8];
-        wsDouble dbl;
-    } v;
-    for (int i = 0; i < 8; i += 2, matissa >>= 16) {
-        v.bytes[i] = (uint8_t)(matissa >> 8);
-        v.bytes[i + 1] = (uint8_t)matissa;
+    if (exp < 0) {
+        while (exp < 0) {
+            while (matissa < (1ull << 63)) {	// scale matissa back to max possible
+                wExp--;
+                matissa <<= 1;
+            }
+            if (++exp == 0)					// minor optimisation use / 100 if exp allows
+                matissa /= 10;
+            else {
+                matissa /= 100;
+                exp++;
+            }
+
+        }
+    } else {
+        while (exp > 0) {						// adjust matissa so we can * 10
+            while (matissa > UINT64_MAX / 10) {
+                wExp++;
+                matissa >>= 1;
+            }
+            matissa *= 10;						// do the x10
+            exp--;
+        }
     }
-    return v.dbl;
+#ifdef ROUND
+    while (matissa >= 0x200000000000000ull) {
+        wExp++;
+        matissa >>= 1;
+    }
+    matissa++;  // round
+#endif
+    while (matissa >= 0x100000000000000ull) {	// scale the matissa to allow for the exponent
+        wExp++;
+        matissa >>= 1;
+    }
+    //    printf("%d %x - %llu %llx\n", wExp, wExp, matissa, matissa);
+    if (wExp <= 0)
+        return 0;
+    if (wExp > 255)
+        return ~(1ull << 63);
+    return (matissa & ~(1ull << 63)) | ((uint64_t)wExp << 55);    // merge in the exponent and, removing matissa high bit
 }
 
 #endif

@@ -209,7 +209,7 @@ int iscons(term_t *r4) {
 }
 
 
-int itype(arg_2) {
+int itype(int arg_2) {
     return (scnstr(typtab, type(arg_2)) < 7);
 }
 

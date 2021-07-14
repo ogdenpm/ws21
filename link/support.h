@@ -12,7 +12,10 @@ typedef struct {
 } many_t;
 
 
-__declspec(noreturn) void error(char *s1, char *s2);
+#ifdef _MSC_VER
+__declspec(noreturn)
+#endif
+void error(char *s1, char *s2);
 char *getflags(int *pac, char ***pav, const char *fmt, ...);
 int16_t lstoi(uint8_t *s);
 uint8_t *itols(uint8_t *s, uint16_t val);

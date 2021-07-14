@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <stddef.h>
 
 #include "std.h"
 #include "support.h"
@@ -169,7 +170,7 @@ FILE *infio;
 //FILE *outfio[2];        // note outfio[1] is tmpfio in original, declared as array as indexed
 char *ofile;
 int nxtexit;
-int tval;
+int sval;
 sym_t *cobase;
 sym_t *dabase;
 sym_t *elc;
@@ -429,7 +430,11 @@ int bmatch(int arg2, sym_t *r4);
 void bchar(int arg2);
 sym_t *addsym(char *r4);
 char *tname(int arg2);
+#ifdef _MSC_VER
 int tclose(void);
+#else
+void tclose(int n, void *p);
+#endif
 char *opname(int arg2);
 int main(int argc, char **argv);
 sym_t **hash(char *arg2);
@@ -454,8 +459,8 @@ int getal(int arg2) {
     bchar(arg2);
     if (r2 = scntab(group1, 31, varE, r4))
         return r2;
-    if (tval = scntab(simpleInstructions, 26, varE, r4)) {
-        tval &= 0xff;
+    if (sval = scntab(simpleInstructions, 26, varE, r4)) {
+        sval &= 0xff;
         return T_BYTE;
     }
     while (r4 < 8)
@@ -467,7 +472,7 @@ int getal(int arg2) {
     if (r3 == 0)
         r3 = addsym(varE);
     if ((r3->flags & TOKMASK) == T_BYTE) {
-        tval = (int)r3->val;
+        sval = (int)r3->val;
         return T_BYTE;
     }
 
@@ -554,7 +559,7 @@ int gterm(sym_t *r4, char *arg4) {
             define(r3, r4);
         } else if (r2 == T_BYTE) {
             r4->flags = T_BYTE;
-            r4->val = tval;
+            r4->val = sval;
             r4->fixup = 0;
             r2 = var8;
         } else {
@@ -646,7 +651,11 @@ int main(int argc, char **argv) {
         }
     }
 
-    _onexit(tclose);
+#ifdef _MSC_VER
+    onexit(tclose);
+#else
+    on_exit(tclose, NULL);
+#endif
     signal(SIGINT, signalHandler);
 
     cobase = addsym(".text");
@@ -690,14 +699,20 @@ char *opname(int arg2) {
     return r2 ? r2->str + 1 : "!?";
 }
 
-int tclose(void) {
+#ifdef _MSC_VER
+int tclose() {
+#else
+void tclose(int n, void *p) {
+#endif
     int r4 = 2;
 
     while (--r4 >= 0) {
         fclose(tfd[r4]);
         remove(tname(r4));
     }
-    return nxtexit;
+#ifdef _MSC_VER
+    return 0;
+#endif
 }
 
 
@@ -901,9 +916,9 @@ int gtok() {
                 ws_strcat(r3);
             return T_STRING;
         case '\'':
-            tval = 0;
+            sval = 0;
             while ((r3 = getesc('\'')) >= 0)
-                tval = (tval << 8) + r3;
+                sval = (sval << 8) + r3;
             return T_BYTE;
 
         case '0':
@@ -912,19 +927,19 @@ int gtok() {
                 r3 = '0';
             } else
                 r4 = 3;
-            tval = 0;
+            sval = 0;
             while (isdig(r3) || (r4 == 4 && (('a' <= r3 && r3 <= 'f') || 'A' <= r3 && r3 <= 'F'))) {
-                tval = (tval << r4) + r3 - (r3 >= 'a' ? 'a' - 10 : r3 >= 'A' ? 'A' - 10 : '0');
+                sval = (sval << r4) + r3 - (r3 >= 'a' ? 'a' - 10 : r3 >= 'A' ? 'A' - 10 : '0');
                 r3 = gchar();
             }
             bchar(r3);
             return T_BYTE;
         case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':
-            tval = r3 - '0';
+            sval = r3 - '0';
 
             while (isdig(r3 = gchar()))
-                tval = tval * 10 + r3 - '0';
+                sval = sval * 10 + r3 - '0';
             bchar(r3);
             return T_BYTE;
         case ':': case '=': case '<': case '>': case '+':
@@ -1255,11 +1270,10 @@ void relby(int arg2, int arg4) {
     iobuf_t *r2 = &obuf[arg2 & 1];
     int r4;
     if (r2->size >= 0x200 || arg2 > 1) {
-        if (r2->fpos != oseek && (fseek(ofd, r2->fpos, 0) != 0 && ferror(ofd)))
-            goto fail;
-        if ((r4 = r2->size - r2->off) && fwrite(r2->buf + r2->off, 1, r4, ofd) != r4) {
-        fail:   error("can't write object file");
-            exit(0);
+        if (r2->fpos != oseek && fseek(ofd, r2->fpos, 0) != 0 ||
+            (r4 = r2->size - r2->off) && fwrite(r2->buf + r2->off, 1, r4, ofd) != r4) {
+               error("can't write object file");
+            exit(1);
         } else {
             r2->fpos += r4;
             r2->off = 0;
@@ -1272,70 +1286,70 @@ void relby(int arg2, int arg4) {
 }
 
 void relout(uint16_t tsiz, uint16_t dsiz) {
-    uint16_t var8;
+    uint16_t u;
 
     cobase->val = 0;
     dabase->val = 0;
-    int r2 = 0;
-    var8 = 3;
-    int r4 = 64;
-    sym_t *r3;
+    int size = 0;
+    u = 3;
+    int k = 64;
+    sym_t *p;
 
-    while (--r4 >= 0) {
-        r3 = psym[r4];
-        while (r3) {
-            if (r3->fixup != 0) {
-                if (r3->fixup == (intptr_t)cobase)
-                    r3->fixup = 1;
-                else if (r3->fixup == (intptr_t)dabase) {
-                    r3->val += tsiz;
-                    r3->fixup = 2;
+    while (--k >= 0) {
+        p = psym[k];
+        while (p) {
+            if (p->fixup != 0) {
+                if (p->fixup == (intptr_t)cobase)
+                    p->fixup = 1;
+                else if (p->fixup == (intptr_t)dabase) {
+                    p->val += tsiz;
+                    p->fixup = 2;
                 } else {
-                    r3->flags |= 0x200;
-                    r3->fixup = ++var8;
+                    p->flags |= 0x200;
+                    p->fixup = ++u;
                 }
             }
-            if (r3->flags & 0x200)
-                r2++;
-            r3 = r3->next;
+            if (p->flags & 0x200)
+                size++;
+            p = p->next;
         }
     }
 
-    if (r2 >= 170)
+    if (size >= 170)
         error("too many symbols");
     obuf[1].fpos = tsiz + 16L + dsiz;
     obuf[1].off = obuf[1].fpos & TOKMASK;
-    obuf[1].size = obuf[1].off;
+    obuf[1].size = obuf[1].fpos;
     relwd(0, 0x1499);  // magic number
-    relwd(0, r2 * 12); // symtab size
+    relwd(0, size * 12); // symtab size
     relwd(0, tsiz);    // tsiz
     relwd(0, dsiz);    // dsiz
     relwd(0, 0);
     relwd(0, 0);
     relwd(0, 0);
     relwd(0, tsiz);    // dbias
-    r4 = 64;
+    k = 64;
 
-    while (--r4 >= 0) {
-        r3 = psym[r4];
+    while (--k >= 0) {
+        p = psym[k];
 
-        while (r3 && r2 > 0) {
-            if (r3->fixup >= 4) {
-                relsym(r3);
-                r2--;
+        while (p && size > 0) {
+            if (p->fixup >= 4) {
+                relsym(p);
+                size--;
             }
-            r3 = r3->next;
+            p = p->next;
         }
     }
-    r4 = 64;
-    while (--r4 >= 0) {
-        r3 = psym[r4];
-        while (r3 && r2 > 0) {
-            if ((r3->flags & 0x200) && r3->fixup < 4) {
-                relsym(r3);
-                r2--;
+    k = 64;
+    while (--k >= 0) {
+        p = psym[k];
+        while (p && size > 0) {
+            if ((p->flags & 0x200) && p->fixup < 4) {
+                relsym(p);
+                size--;
             }
-            r3 = r3->next;
+            p = p->next;
         }
     }
 
@@ -1346,14 +1360,14 @@ void relout(uint16_t tsiz, uint16_t dsiz) {
 }
 
 void relseg(FILE *fp) {
-    int var8;
-    int r3;
-    int r2;
-    int r4;
+    int nabs;
+    int size;
+    int i;
+    int b;
 
     rewind(fp);
 
-    var8 = 0;
+    nabs = 0;
 
     while (1) {
         fread(tmpData, 1, offsetof(tmpdata_t, buf), fp);
@@ -1361,47 +1375,47 @@ void relseg(FILE *fp) {
             relby(1, 0);
             return;
         }
-        r3 = tmpData[0].size;
-        fread(tmpData[0].buf, 1, r3, fp);
+        size = tmpData[0].size;
+        fread(tmpData[0].buf, 1, size, fp);
         if (tmpData[0].psym == 0) {
-            var8 += r3;
-            r2 = 0;
-            while (r2 < r3)
-                relby(0, tmpData[0].buf[r2++]);
+            nabs += size;
+            i = 0;
+            while (i < size)
+                relby(0, tmpData[0].buf[i++]);
         } else {
-            r2 = (int)((sym_t *)tmpData[0].psym)->val + (tmpData[0].buf[0] & 0xff) + (tmpData[0].buf[1] << 8);
-            r4 = (int)((sym_t *)tmpData[0].psym)->fixup;
-            tmpData[0].buf[0] = r2;
-            tmpData[0].buf[1] = r2 >> 8;
-            r2 = 0;
-            while (r2 < r3)
-                relby(0, tmpData[0].buf[r2++]);
-            if (r4 == 0)
-                var8 += r3;
+            i = (int)((sym_t *)tmpData[0].psym)->val + (tmpData[0].buf[0] & 0xff) + (tmpData[0].buf[1] << 8);
+            b = (int)((sym_t *)tmpData[0].psym)->fixup;
+            tmpData[0].buf[0] = i;
+            tmpData[0].buf[1] = i >> 8;
+            i = 0;
+            while (i < size)
+                relby(0, tmpData[0].buf[i++]);
+            if (b == 0)
+                nabs += size;
             else {
-                while (var8 >= 0x201f) {
+                while (nabs >= 0x201f) {
                     relby(1, 0x3f);
                     relby(1, 0xff);
-                    var8 -= 0x201f;
+                    nabs -= 0x201f;
                 }
-                if (var8 >= 32) {
-                    var8 -= 32;
-                    relby(1, (var8 >> 8) | 0x20);
-                    relby(1, var8);
-                } else if (var8)
-                    relby(1, var8);
+                if (nabs >= 32) {
+                    nabs -= 32;
+                    relby(1, (nabs >> 8) | 0x20);
+                    relby(1, nabs);
+                } else if (nabs)
+                    relby(1, nabs);
 
-                var8 = r3 - 2;
-                if (r4 < 0x2f)
-                    relby(1, (r4 + 0x10) << 2);
-                else if (r4 < 0xaf) {
+                nabs = size - 2;
+                if (b < 0x2f)
+                    relby(1, (b + 0x10) << 2);
+                else if (b < 0xaf) {
                     relby(1, 0xfc);
-                    relby(1, r4 - 0x2f);
+                    relby(1, b - 0x2f);
                 } else {
-                    r4 -= 0xaf;
+                    b -= 0xaf;
                     relby(1, 0xfc);
-                    relby(1, (r4 >> 8) | 0x80);
-                    relby(1, r4);
+                    relby(1, (b >> 8) | 0x80);
+                    relby(1, b);
                 }
             }
         }

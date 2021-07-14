@@ -21,10 +21,9 @@ long arinit(int arg_2, aux_t *arg_4, term_t *r4, bool arg_8) {
     } else {
         var_A = 0L;
         r2 = 0;
-        while (arg_4->lng == 0 || r2 < arg_4->lng) {
-            if (r4 != 0 || eat(C_LBRACE) != 0 || (r4 = gexpr(false)) != 0)
-                break;
-            var_A += dinit(arg_2, arg_4->next, r4, 10);
+        while ((arg_4->lng == 0 || r2 < arg_4->lng) &&
+                (r4 || eat(C_LBRACE) || (r4 = gexpr(false)))) {
+            var_A += dinit(arg_2, arg_4->next, r4, arg_8);
             if (r4 == 0)
                 need(C_RBRACE);
             if (arg_8)
@@ -104,7 +103,10 @@ long dinit(int arg_2, aux_t *arg_4, term_t *r4, bool arg_8) {
             if (dlit(r4) != 0)
                 var_16 = pfloat(&r4->dbl , r2);
             else if (iscons(r4) != 0) { // 2030
-                var_E = long2WsDouble(r4->term.lng);      // portable version to get ws double format
+                if (r4->term.lng >= 0)
+                    var_E = mkWsDouble(r4->term.lng, 0);
+                else
+                    var_E = mkWsDouble(-r4->term.lng, 0) ^ (1ull << 63);
                 var_16 = pfloat(&var_E, r2);
             } else
                 wsperror("illegal double initializer");

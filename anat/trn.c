@@ -256,14 +256,13 @@ void putval(int code, token_t *tok)
 	type = tok->flags & TYPEMASK;
 	switch(code) {
 	case 0x2: 
-		printf(reg8[scnstr(crlist, type)]);
+		fputs(reg8[scnstr(crlist, type)], stdout);
 		break;
 	case 0x3: 
-		printf(reg16[scnstr(irlist, type)]);
+		fputs(reg16[scnstr(irlist, type)], stdout);
 		break;
 	case 0x4:
-#pragma warning(suppress : 6385)	// suppress intelliSense warning
-		printf(calljmp[type - TCNZ]);
+		fputs(calljmp[type - TCNZ], stdout);
 		break;
 	default:
 		if (tok->seg) {
