@@ -1,6 +1,12 @@
 # ws21
 Decompilations / ports of Whitesmiths 2.1 tools
 
+The latest versions now build cleanly with gcc
+
+A number of bugs have been fixed.
+
+A breaking change is that the cpp to cp1 interface no longer converts numbers to pdp-11 format. The cp1 to cp2 interface does however convert to pdp-11 format and this allows the CP/M based cp2 pass to be used.
+
 The tools
 
 **disrel** - this is a tool I wrote around 2007 that disassembles Whitesmiths' 8080 object files. I have recently updated to make sure it compiles cleanly for x64 builds. There was a corresponding tool to extract object files from archives, but since the port of lib this is no longer needed
@@ -27,7 +33,7 @@ Other than the fixes most of the code is as close to the original decompilation 
 6. Adding dummy arguments where the function  call did not match the function prototype.
 7. Changes to as80 to use intptr_t as the original assumed sizeof(int) == sizeof(pointerType). Appropriate typecasts were added where the variables were used.
 
-Whilst I have done some testing of the code, e.g. library add/delete, checking link by building the whitesmiths' executables and assembling echo.s, there are likely to be some hidden bugs. If you identify one, please let me  know and I will look to fix it.
+Whilst I have done some testing of the code, e.g. library add/delete, checking link by building the whitesmiths' executables and assembling echo.s, there are likely to be some bugs. If you identify any, please let me  know and I will look to fix them.
 
 **cpp** - the c pre-processor pass of the Whitesmiths' V2.1 C compiler
 
@@ -47,4 +53,4 @@ Note, this cleanly compiles echo.c from the standard Whitesmith's distribution a
 
 Mark Ogden
 
-23-Aug-2020
+14-Jul-2021
