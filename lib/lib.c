@@ -25,11 +25,7 @@ char *_pname = "lib";
 int vers;
 int nxtexit;
 
-#ifdef _MSC_VER
-int endup(void);
-#else
-void endup(int n, void *p);
-#endif
+void endup(void);
 int gthdr(FILE *fp, uint8_t *arg_4, int arg_6);
 char *inlist(int arg_2, char **arg_4, char *arg_6);
 FILE *lcreate(char *arg_2);
@@ -102,15 +98,9 @@ int del(int arg_2, char **arg_4, char *arg_6, int arg_8) {
 
 
 
-#ifdef _MSC_VER
-int endup(void) {
-#else
-void endup(int n, void *p) {
-#endif
+
+void endup(void) {
     remove(uname());
-#ifdef _MSC_VER
-    return 0;
-#endif
 }
 
 
@@ -150,13 +140,10 @@ FILE *lcreate(char *arg_2) {
     itols(var_8, magic);
         if (arg_2 == 0) {
             arg_2 = uname();
-            if (nxtexit++ == 0)
-#ifdef _MSC_VER
-                onexit(endup);
-#else
-                on_exit(endup, NULL);
-#endif
-            signal(SIGINT, signalHandler);
+            if (nxtexit++ == 0) {
+                atexit(endup);
+                signal(SIGINT, signalHandler);
+            }
         }
     if ((fp = fopen(arg_2, "wb")) == 0)
         error("can't create ", arg_2);
@@ -212,14 +199,16 @@ int main(int argc, char **argv) {
     int (*r4)(int, char **, char *, int) = tab;        // value to suppress compiler 
 
     if (--argc < 1)
-        usage("expects <lfile>");
-
+        usage("expects <lfile>\n");
+    else if (strcmp(*r3, "-help") == 0)     // to allow lib -help -- -help is not treated as a library
+        argc++, argv--;
     getflags(&argc, &argv, "c,d,p,r,t,v6,v7,v,x:<lfile> F <files>", &cfl, &dfl, &pfl,
         &rfl, &tfl, &v6fl, &v7fl, &vfl, &xfl);
+
     r2 = 0;
     vers = v6fl ? 6 : v7fl ? 7 : 0;
     if (cfl + dfl + pfl + rfl + tfl + xfl > 1)
-        usage("takes only one of -[c d p r t x]");
+        usage("takes only one of -[c d p r t x]\n");
     else if (xfl)
         r4 = xtract;
     else if (tfl)

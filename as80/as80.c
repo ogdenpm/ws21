@@ -430,11 +430,7 @@ int bmatch(int arg2, sym_t *r4);
 void bchar(int arg2);
 sym_t *addsym(char *r4);
 char *tname(int arg2);
-#ifdef _MSC_VER
-int tclose(void);
-#else
-void tclose(int n, void *p);
-#endif
+void tclose(void);
 char *opname(int arg2);
 int main(int argc, char **argv);
 sym_t **hash(char *arg2);
@@ -650,12 +646,7 @@ int main(int argc, char **argv) {
             exit(0);
         }
     }
-
-#ifdef _MSC_VER
-    onexit(tclose);
-#else
-    on_exit(tclose, NULL);
-#endif
+    atexit(tclose);
     signal(SIGINT, signalHandler);
 
     cobase = addsym(".text");
@@ -699,20 +690,14 @@ char *opname(int arg2) {
     return r2 ? r2->str + 1 : "!?";
 }
 
-#ifdef _MSC_VER
-int tclose() {
-#else
-void tclose(int n, void *p) {
-#endif
+
+void tclose(void) {
     int r4 = 2;
 
     while (--r4 >= 0) {
         fclose(tfd[r4]);
         remove(tname(r4));
     }
-#ifdef _MSC_VER
-    return 0;
-#endif
 }
 
 

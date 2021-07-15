@@ -25,11 +25,11 @@ public:
 
 	loc() : data(0), symbol(0), type(0), label(0), scan(0), labelName(0) {}
 
-	void addLabel(char *newlabel);
+	void addLabel(const char *newlabel);
 
 };
 
-void loc::addLabel(char *newlabel)
+void loc::addLabel(const char *newlabel)
 {
 	if (labelName == 0) {
 		labelName = new char[strlen(newlabel) + 1];
@@ -411,7 +411,7 @@ void markrel(FILE *fp, loc *mem, int daddr, int eaddr)
 	}
 }
 
-void addCase(loc *mem, char *lab, unsigned target)
+void addCase(loc *mem, const char *lab, unsigned target)
 {
 	char tlabel[6];
 	if (mem[target].labelName == 0) {	// no label so far, so add proper jump label
@@ -595,7 +595,7 @@ void buildmem(FILE *fp, loc *mem, int len)
 
 
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	FILE *fp, *fpout;
 	char fname[255];

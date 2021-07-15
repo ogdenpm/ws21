@@ -85,9 +85,11 @@ char *getflags(int *pac, char ***pav, const char *fmt, ...) {
 
 	va_list args;
 
-	for (++ *pav; *pac && -- * pac; ++ * pav) {
+	for (++*pav; *pac && --*pac > 0; ++*pav) {
 		char *r2 = **pav;
 
+		if (strcmp(r2, "-help") == 0)
+			expandFlags((s = strchr(fmt, ':')) ? s + 1 : "F", fmt);
 		if (!strcmp(r2, "--")) {
 			--*pac;
 			++*pav;

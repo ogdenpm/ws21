@@ -139,16 +139,10 @@ void drcopy() {
 
 
 
-#ifdef _MSC_VER
-int endeup(void) {
-#else
-void endeup(int n, void *p) {
-#endif
+
+void endeup(void) {
     fclose(tfd);
     remove(uname());
-#ifdef _MSC_VER
-    return 0;
-#endif
 }
 
 int link1(FILE *fp, int arg_4) {
@@ -333,12 +327,7 @@ int mid2() {
     if (!afl && !rfl) {
         if ((tfd = fopen(uname(), "w+b")) == NULL)
             error("can't create tmp file", 0);
-#ifdef _MSC_VER
-        onexit(endeup);
-#else
-        on_exit(endeup, NULL);
-#endif
-
+        atexit(endeup);
         signal(SIGINT, signalHandler);
     }
     if (cfl) {
