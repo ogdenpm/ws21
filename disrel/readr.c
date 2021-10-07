@@ -1,7 +1,8 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory.h>
+#include <stdbool.h>
 
 /*
 	data
@@ -14,8 +15,13 @@
 */
 #define LABELBASE	3
 
-class loc {
-public:
+#ifdef _WIN32
+#define DIRSEP	"\\/:"
+#else
+#define DIRSEP "/"
+#endif
+
+typedef struct {
 	unsigned char data;
 	unsigned short symbol;
 	unsigned char type;
@@ -23,24 +29,19 @@ public:
 	unsigned char scan;
 	char *labelName;
 
-	loc() : data(0), symbol(0), type(0), label(0), scan(0), labelName(0) {}
+} loc_t;
 
-	void addLabel(const char *newlabel);
-
-};
-
-void loc::addLabel(const char *newlabel)
+void addLabel(loc_t *mloc, char *newlabel)
 {
-	if (labelName == 0) {
-		labelName = new char[strlen(newlabel) + 1];
-		strcpy(labelName, newlabel);
+	if (mloc->labelName == 0) {
+		mloc->labelName = strdup(newlabel);
 	} else {
-		char *s = new char[strlen(newlabel) + strlen(labelName) + 3];
+		char *s = malloc(strlen(mloc->labelName) + strlen(newlabel) + 3);
 		strcpy(s, newlabel);
 		strcat(s, ":\n");
-		strcat(s, labelName);
-		delete labelName;
-		labelName = s;
+		strcat(s, mloc->labelName);
+		free(mloc->labelName);
+		mloc->labelName = s;
 	}
 }
 
@@ -157,18 +158,11 @@ int getword(FILE *fp)
 	return n + getc(fp) * 256;
 }
 
-int getword(unsigned char* &buf)
-{
-	int n;
-	n = *buf++ & 0xff;
-	return n + *buf++ * 256;
-}
-
-void markCode(loc *codeblk, int len);
-void buildmem(FILE *fp, loc *mem, int len);
-void markrel(FILE *fp, loc *mem, int daddr, int eaddr);
-void scanSwitch(loc *codeblk, int len, int swlabel);
-void dump(FILE *fp, loc *mem, int start, int end, sym_t *syms);
+void markCode(loc_t *codeblk, int len);
+void buildmem(FILE *fp, loc_t *mem, int len);
+void markrel(FILE *fp, loc_t *mem, int daddr, int eaddr);
+void scanSwitch(loc_t *codeblk, int len, int swlabel);
+void dump(FILE *fp, loc_t *mem, int start, int end, sym_t *syms);
 
 int asmfmt = 0;
 
@@ -184,9 +178,9 @@ void relv2(FILE *infp, FILE *outfp)
 
 	int swlabel = -1;
 
-	sym_t *symtab = new sym_t[syms];
+	sym_t *symtab = calloc(syms, sizeof(sym_t));
 
-	loc *mem = new loc[code + data];
+	loc_t *mem = calloc(code + data, sizeof(loc_t));
 	// load mem
 	for (int i = 0; i < code + data; i++)
 		mem[i].data = getc(infp);
@@ -201,11 +195,11 @@ void relv2(FILE *infp, FILE *outfp)
 		if (symtab[i].type == 0xd) {
 			mem[symtab[i].value].scan = 1;
 			mem[symtab[i].value].label = i + LABELBASE;
-			mem[symtab[i].value].addLabel(symtab[i].name);
+			addLabel(&mem[symtab[i].value], symtab[i].name);
 			fprintf(outfp, "\tpublic");
 		} else if(symtab[i].type == 0xe) {
 			mem[symtab[i].value].label = i + LABELBASE;
-			mem[symtab[i].value].addLabel(symtab[i].name);
+			addLabel(&mem[symtab[i].value], symtab[i].name);
 			fprintf(outfp, "\tpublic");
 		} else {
 			fprintf(outfp, "\textern");
@@ -233,9 +227,9 @@ void relv1(FILE *infp, FILE *outfp)
 	int data = getword(infp);
 	int swlabel = -1;
 
-	sym_t *symtab = new sym_t[syms];
+	sym_t *symtab = calloc(syms, sizeof(sym_t));
 
-	loc *mem = new loc[code + data];
+	loc_t *mem = calloc(code + data, sizeof(loc_t));
 
 	for (int i = 0; i < syms; i++) {
 		symtab[i].type = getc(infp);
@@ -245,11 +239,11 @@ void relv1(FILE *infp, FILE *outfp)
 		if (symtab[i].type == 0xd) {
 			mem[symtab[i].value].scan = 1;
 			mem[symtab[i].value].label = i + LABELBASE;
-			mem[symtab[i].value].addLabel(symtab[i].name);
+			addLabel(&mem[symtab[i].value], symtab[i].name);
 			fprintf(outfp, "\tpublic");
 		} else if(symtab[i].type == 0xe) {
 			mem[symtab[i].value].label = i + LABELBASE;
-			mem[symtab[i].value].addLabel(symtab[i].name);
+			addLabel(&mem[symtab[i].value], symtab[i].name);
 			fprintf(outfp, "\tpublic");
 		} else {
 			fprintf(outfp, "\textern");
@@ -274,7 +268,7 @@ void relv1(FILE *infp, FILE *outfp)
 
 
 
-void scanSwitch(loc *codeblk, int len, int swlabel)
+void scanSwitch(loc_t *codeblk, int len, int swlabel)
 {
 	for (int i = 4; i < len; i++) {
 		if (codeblk[i].type == 3 && codeblk[i].symbol == swlabel) {
@@ -298,7 +292,7 @@ void scanSwitch(loc *codeblk, int len, int swlabel)
 }
 
 
-void markCode(loc *codeblk, int len)
+void markCode(loc_t *codeblk, int len)
 {
 	bool rescan = true;
 
@@ -347,7 +341,7 @@ void markCode(loc *codeblk, int len)
 		codeblk[len-1].scan = 2;
 }
 
-void markrel(FILE *fp, loc *mem, int daddr, int eaddr)
+void markrel(FILE *fp, loc_t *mem, int daddr, int eaddr)
 {
 	int c;
 	int addr = 0;
@@ -411,18 +405,18 @@ void markrel(FILE *fp, loc *mem, int daddr, int eaddr)
 	}
 }
 
-void addCase(loc *mem, const char *lab, unsigned target)
+void addCase(loc_t *mem, char *lab, unsigned target)
 {
 	char tlabel[6];
 	if (mem[target].labelName == 0) {	// no label so far, so add proper jump label
 		sprintf(tlabel, "L%04X", target);
-		mem[target].addLabel(tlabel);
+		addLabel(&mem[target], tlabel);
 	}
-	mem[target].addLabel(lab);
+	addLabel(&mem[target], lab);
 }
 
 
-void dump(FILE *fp, loc *mem, int start, int end, sym_t *syms)
+void dump(FILE *fp, loc_t *mem, int start, int end, sym_t *syms)
 {
 	int off;
 	int cnt;
@@ -543,7 +537,7 @@ void dump(FILE *fp, loc *mem, int start, int end, sym_t *syms)
 	}
 }
 
-void buildmem(FILE *fp, loc *mem, int len)
+void buildmem(FILE *fp, loc_t *mem, int len)
 {
 
 	for (int addr = 0; addr < len; ) {
@@ -595,10 +589,11 @@ void buildmem(FILE *fp, loc *mem, int len)
 
 
 
-int main(int argc, char **argv)
+void main(int argc, char **argv)
 {
 	FILE *fp, *fpout;
 	char fname[255];
+	char *s;
 
 
 	if (argc == 3)
@@ -611,7 +606,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	strcpy(fname, argv[argc - 1]);
-	if (char *s = strrchr(fname, '.'))
+	if ((s = strrchr(fname, '.')) && strpbrk(s, DIRSEP) == NULL)
 		*s = 0;
 	strcat(fname, asmfmt == 0 ? ".asm" : ".8");
 	if ((fpout = fopen(fname, "wt")) == NULL)
